@@ -1,0 +1,7 @@
+.idea/
+Include/
+Lib/
+Scripts/
+share/
+*.cfg
+*.bin
