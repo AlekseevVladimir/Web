@@ -1,4 +1,4 @@
-Список команды
-- Алексеев Владимир (@AlekseevVladimir)
-- Колтун Дмитрий (@KoltunDmitry)
-- Чернель Евгений (@ChernelEvgeni)
+List of team:
+- @AlekseevVladimir
+- @KoltunDmitry
+- @ChernelEvgeni
