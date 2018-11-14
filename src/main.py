@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 def parse(json_file):
-    graph = nx.Graph();
+    graph = nx.Graph()
     graph.add_nodes_from([i['idx'] for i in json_file['points']])
     graph.add_weighted_edges_from([(i['points'][0], i['points'][1], i['length']) for i in json_file['lines']])
     return graph, json_file["idx"]
