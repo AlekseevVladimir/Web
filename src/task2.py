@@ -7,11 +7,18 @@ def main():
 	sock=socket.socket()
 	sock.connect(('wgforge-srv.wargaming.net', 443))
 	data=login(sock)
+	print(data["trains"])
 	#print(data)
 	map_l1=getmap(sock, 1)
 	map_l0=getmap(sock, 0)
 	#map_l10=getmap(sock, 10)
-	print(action(sock, 6, ''))
+	#print(action(sock, 6, ''))
+	print(map_l0["lines"])
+	nextturn(sock)
+	move(sock, 5, 1, 1)
+	nextturn(sock)
+	print(map_l1["trains"])
+	logout(sock)
 	sock.close()
 
 def action(sock, tmp, string):
@@ -19,7 +26,7 @@ def action(sock, tmp, string):
 	sock.send(bytes)
 	response=sock.recv(4)
 	response=struct.unpack('L', response)[0]
-	print(response)
+	#print(response)
 	if response!=0:
 		while True:
 			ready, a, b=select.select([sock],[],[],10)
@@ -29,7 +36,7 @@ def action(sock, tmp, string):
 		return 0
 	datalen=sock.recv(4)
 	datalen=struct.unpack('L', datalen)[0]
-	print(datalen)
+	#print(datalen)
 	sock.settimeout(10)
 	data=sock.recv(datalen)
 	datalen-=len(data)
@@ -40,24 +47,38 @@ def action(sock, tmp, string):
 	data=json.loads(data)
 	return data
 	
-
+def logout(sock):
+	bytes=int(2).to_bytes(4, byteorder='little')
+	sock.send(bytes)
+	
+def getplayerinfo(sock):
+	action(sock, 6, '')
+	
+def nextturn(sock):
+	bytes=int(5).to_bytes(4, byteorder='little')
+	sock.send(bytes)
+	
 def login(sock):
 	print ("enter username")
 	name=input()
-	string='{"name":"'+name+'"}'
+	string=json.dumps({"name":name})
+	#print(adict)
+	#string='{"name":"'+name+'"}'
 	data = action(sock,1,string)
 	return data
 	
 def getmap(sock, layer):
-	string='{"layer":'+str(layer)+'}'
+	string=json.dumps({"layer":layer})
 	data=action(sock, 10, string)
-	print(data)
+	#print(data)
 	#task1.parse(data)
 	return data
 
 	
 def move(sock, line_idx, speed, train_idx):
-	string='{"line_idx":'+str(line_idx)+',"speed":'+str(speed)+',"train_idx":'+str(train_idx)+'}'
+	string=json.dumps({"line_idx":line_idx, "speed":speed, "train_idx":train_idx})
+	bytes=int(3).to_bytes(4, byteorder='little')+len(string).to_bytes(4, byteorder='little')+string.encode()
+	sock.send(bytes)
 	
 def errorReport(code):
 	if code==1:
@@ -65,9 +86,9 @@ def errorReport(code):
 	elif code==2:
 		print("Resource not found")
 	elif code==3:
-		printf("Access denied")
+		print("Access denied")
 	elif code==4:
-		printf("Not ready")
+		print("Not ready")
 	elif code==5:
 		printf("Timeout")
 	else:
