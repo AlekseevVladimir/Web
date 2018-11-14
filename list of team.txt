@@ -1,4 +1,0 @@
-List of team:
-- @AlekseevVladimir
-- @KoltunDmitry
-- @ChernelEvgeni
