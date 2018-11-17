@@ -1,7 +1,14 @@
 # Web
 
+
 ## Список команды
-[Список](src/list_team.md)
+* [AlekseevVladimir](https://github.com/AlekseevVladimir) -
+**Алексеев Владимир**
+* [KoltunDmitry](https://github.com/KoltunDmitry) -
+**Колтун Дмитрий**
+* [ChernelEvgeni](https://github.com/ChernelEvgeni) -
+**Чернель Евгений**
+
 
 ## Задания
 

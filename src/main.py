@@ -2,7 +2,6 @@ import json
 import networkx as nx
 import matplotlib.pyplot as plt
 
-
 def parse(json_file):
     graph = nx.Graph()
     graph.add_nodes_from([i['idx'] for i in json_file['points']])
@@ -20,15 +19,15 @@ def createFigures(graph, graph_idx):
 
 
 def main():
-	graph, graph_idx=parse(json.load(open('Graphs_JSON/small_graph.json')))
+	graph, graph_idx=parse(json.load(open('test_graphs/small_graph.json')))
 	createFigures(graph, graph_idx)
-	graph, graph_idx=parse(json.load(open('Graphs_JSON/big_graph.json')))
+	graph, graph_idx=parse(json.load(open('test_graphs/big_graph.json')))
 	createFigures(graph, graph_idx)
-	graph, graph_idx=parse(json.load(open('Graphs_JSON/custom_graph.json')))
+	graph, graph_idx=parse(json.load(open('test_graphs/custom_graph.json')))
 	createFigures(graph, graph_idx)
-	graph, graph_idx=parse(json.load(open('Graphs_JSON/custom_graph2.json')))
+	graph, graph_idx=parse(json.load(open('test_graphs/custom_graph2.json')))
 	createFigures(graph, graph_idx)
-	graph, graph_idx=parse(json.load(open('Graphs_JSON/custom_graph3.json')))
+	graph, graph_idx=parse(json.load(open('test_graphs/custom_graph3.json')))
 	createFigures(graph, graph_idx)
 	plt.show()
 
