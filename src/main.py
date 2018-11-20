@@ -3,21 +3,21 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 def parse(json_file):
-    graph = nx.Graph()
-    graph.add_nodes_from([i['idx'] for i in json_file['points']])
-    graph.add_weighted_edges_from([(i['points'][0], i['points'][1], i['length']) for i in json_file['lines']])
-    return graph, json_file["idx"]
+	graph = nx.Graph()
+	graph.add_nodes_from([i['idx'] for i in json_file['points']])
+	graph.add_weighted_edges_from([(i['points'][0], i['points'][1], i['length']) for i in json_file['lines']])
+	return graph, json_file["idx"]
 
 
 def createFigures(graph, graph_idx):
-    plt.figure(graph_idx)
-    pos = nx.spring_layout(graph)
-    labels = nx.get_edge_attributes(graph, 'weight')
-    nodeSize = 200
-    nx.draw(graph, pos, with_labels=True, nodecolor='r', edge_color='b', node_size=nodeSize, font_size=8)
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
-
-
+	plt.figure(graph_idx)
+	pos = nx.kamada_kawai_layout(graph, weight=None)
+	labels = nx.get_edge_attributes(graph, 'weight')
+	nodeSize = 200
+	nx.draw(graph, pos, with_labels=True, nodecolor='r', edge_color='b', node_size=nodeSize, font_size=8)
+	nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
+	
+	
 def main():
 	graph, graph_idx=parse(json.load(open('test_graphs/small_graph.json')))
 	createFigures(graph, graph_idx)
@@ -33,4 +33,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+	main()
