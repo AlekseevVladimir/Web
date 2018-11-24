@@ -1,5 +1,15 @@
 # Web
 
+
+## Список команды
+* [AlekseevVladimir](https://github.com/AlekseevVladimir) -
+**Алексеев Владимир**
+* [KoltunDmitry](https://github.com/KoltunDmitry) -
+**Колтун Дмитрий**
+* [ChernelEvgeni](https://github.com/ChernelEvgeni) -
+**Чернель Евгений**
+
+
 ## Задания
 
 ### Граф визуальный прекрасный I
