@@ -6,8 +6,9 @@ from PyQt5.QtGui import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from main import createFigures,parse
+from dataprocessor import parseMap, drawMap
 from serverinteraction import Socket
+from main import parse
 
 
 class PrettyWidget(QWidget):
@@ -80,9 +81,12 @@ class PrettyWidget(QWidget):
 	def graph_server(self):
 		self.figure.clf()
 		json_map = self.server.getmap(0)
+		json_map = json_map[1]
+		print("json_map")
 		print(json_map)
-		graph, graph_idx = parse(json_map)
-		createFigures(graph, graph_idx)
+		graph = parseMap(json_map)
+		print(type(graph))
+		drawMap(graph)
 		self.canvas.draw_idle()
 	def signIn(self):
 		data, isOk = QInputDialog.getText(self, "Sign in", "Input name")
