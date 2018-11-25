@@ -2,16 +2,17 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 
-def getOptions(train, lines):
+def getOptions(train, map):
 	options=list()
-	linesWTrains=[x for x in lines if x["idx"]==train["line_idx"]]
-	linesWTrains=linesWTrains[0]
-	print(linesWTrains)
-	if train["position"]!=0 and train["position"]!=linesWTrains["length"]:
-		options=linesWTrains["points"]
+	points=map.edges()
+	print(points)
+	lines={v:k for k, v in nx.get_edge_attributes(map, "idx").items()}
+	length=nx.get_edge_attributes(map, "weight")
+	if train["position"]!=0 and train["position"]!=length[train["line_idx"]]:
+		options=lines[train["line_idx"]]
 	elif train["position"]==0:
 		for i in lines:
-			if linesWTrains["points"][0]==i["points"][0]:
+			if lines[train["line_idx"]][0]==i["points"][0]:
 				options.append(i["points"][1])
 			elif linesWTrains["points"][0]==i["points"][1]:
 				options.append(i["points"][0])
@@ -31,16 +32,23 @@ def parseMap(map):
 	graph=nx.Graph()
 	graph.add_nodes_from([i['idx'] for i in map['points']])
 	graph.add_weighted_edges_from([(i['points'][0], i['points'][1], i['length']) for i in map['lines']])
+	valList=dict()
+	for i in map["lines"]:
+		valList[tuple(i["points"])]=i["idx"]
+	nx.set_edge_attributes(graph, valList, "idx")
 	pos=nx.spring_layout(graph)
 	pos=nx.kamada_kawai_layout(graph, pos=pos)
-	return graph, pos, map["lines"]
+	valList=dict()
+	for i in map["points"]:
+		valList[i["idx"]]=pos[i["idx"]]
+	nx.set_node_attributes(graph, valList, "pos")
+	return graph
 	
 	
-def parseTrains(trains, pos, lines):
+def parseTrains(trains, map):
 	graph=nx.Graph()
-	buf=list()
-	print("\n")
-	print(trains)
+	lines={v:k for k, v in nx.get_edge_attributes(map, "idx").items()}
+	length=nx.get_edge_attributes(map, "weight")
 	goodstype={1:"armor", 2:"products", None:"Empty"}
 	buttons=list()
 	for i in trains:
@@ -49,31 +57,28 @@ def parseTrains(trains, pos, lines):
 			string+=' '+str(i["goods"])
 		buttons.append(string)
 	print(buttons)
-	linesWTrains=0
-	for i in trains:
-		if i["position"]!=0:
-			linesWTrains=[x for x in lines if x["idx"]==i["line_idx"]]
-			buf.append(i)
-	trains=buf
+	trains=[x for x in trains if x["position"]!=0 and x["position"]!=length[x["line_idx"]]]
+	pos=nx.get_node_attributes(map, "pos")
 	if trains:
-		vec=[pos[x["points"][1]]-pos[x["points"][0]] for x in linesWTrains]
+		vec=[pos[lines[i["line_idx"]][1]]-pos[lines[i["line_idx"]][0]] for i in trains]
 		for i in trains:
-			trainPos={i["idx"]:[pos[y["points"][0]]+x/lines[i["line_idx"]]["length"]*i["position"] for x in vec
-			for y in linesWTrains if i["line_idx"]==y["idx"]]}
+			trainPos={i["idx"]:[pos[lines[i["line_idx"]][0]]+x/length[tuple(lines[i["line_idx"]])]*i["position"] for x in vec]}
 		for i in trains:
 			trainPos[i["idx"]]=list(trainPos[i["idx"]][0])
 		for i in trains:
 			graph.add_node(i["idx"], pos=trainPos[i["idx"]])
+		print('buttons')	
+		print(buttons)
 		return graph, buttons
 	else:
 		return 0, buttons
-	#graph.add_nodes_from([(i["idx"], "pos"=1) for i in trains])
 	
 def drawTrains(trains):
 	pos=nx.get_node_attributes(trains, "pos")
 	nx.draw(trains, pos, node_color="blue", node_size=100)
 	
-def drawMap(graph, pos):
+def drawMap(graph):
+	pos=nx.get_node_attributes(graph, "pos")
 	labels = nx.get_edge_attributes(graph, 'weight')
 	nodeSize = 200
 	nx.draw(graph, pos, with_labels=True, nodecolor='r', edge_color='b', node_size=nodeSize, font_size=8)
