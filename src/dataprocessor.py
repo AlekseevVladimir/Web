@@ -5,41 +5,40 @@ import matplotlib.pyplot as plt
 def getOptions(train, map):
 	options=list()
 	points=map.edges()
-	print(points)
 	lines={v:k for k, v in nx.get_edge_attributes(map, "idx").items()}
 	length=nx.get_edge_attributes(map, "weight")
 	if train["position"]!=0 and train["position"]!=length[train["line_idx"]]:
 		options=lines[train["line_idx"]]
 	elif train["position"]==0:
-		for i in lines:
-			if lines[train["line_idx"]][0]==i["points"][0]:
-				options.append(i["points"][1])
-			elif linesWTrains["points"][0]==i["points"][1]:
-				options.append(i["points"][0])
+		for i in points:
+			if lines[train["line_idx"]][0]==i[0]:
+				options.append(i[1])
+			elif lines[train["line_idx"]][0]==i[1]:
+				options.append(i[0])
 	else:
-		for i in lines:
-			if linesWTrains["points"][1]==i["points"][0]:
-				options.append(i["points"][1])
-			elif linesWTrains["points"][1]==i["points"][1]:
-				options.append(i["points"][1])
+		for i in points:
+			if lines[train["line_idx"]][1]==i[0]:
+				options.append(i[1])
+			elif lines[train["line_idx"]][1]==i[1]:
+				options.append(i[0])
 				
 	return options
 	
 	
 
 
-def parseMap(map):
+def parseMap(jsonData):
 	graph=nx.Graph()
-	graph.add_nodes_from([i['idx'] for i in map['points']])
-	graph.add_weighted_edges_from([(i['points'][0], i['points'][1], i['length']) for i in map['lines']])
+	graph.add_nodes_from([i['idx'] for i in jsonData['points']])
+	graph.add_weighted_edges_from([(i['points'][0], i['points'][1], i['length']) for i in jsonData['lines']])
 	valList=dict()
-	for i in map["lines"]:
+	for i in jsonData["lines"]:
 		valList[tuple(i["points"])]=i["idx"]
 	nx.set_edge_attributes(graph, valList, "idx")
 	pos=nx.spring_layout(graph)
 	pos=nx.kamada_kawai_layout(graph, pos=pos)
 	valList=dict()
-	for i in map["points"]:
+	for i in jsonData["points"]:
 		valList[i["idx"]]=pos[i["idx"]]
 	nx.set_node_attributes(graph, valList, "pos")
 	return graph
@@ -77,11 +76,11 @@ def drawTrains(trains):
 	pos=nx.get_node_attributes(trains, "pos")
 	nx.draw(trains, pos, node_color="blue", node_size=100)
 	
-def drawMap(graph):
-	pos=nx.get_node_attributes(graph, "pos")
-	labels = nx.get_edge_attributes(graph, 'weight')
+def drawMap(map):
+	pos=nx.get_node_attributes(map, "pos")
+	labels = nx.get_edge_attributes(map, 'weight')
 	nodeSize = 200
-	nx.draw(graph, pos, with_labels=True, nodecolor='r', edge_color='b', node_size=nodeSize, font_size=8)
-	nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
+	nx.draw(map, pos, with_labels=True, nodecolor='r', edge_color='b', node_size=nodeSize, font_size=8)
+	nx.draw_networkx_edge_labels(map, pos, edge_labels=labels)
 	
 	
