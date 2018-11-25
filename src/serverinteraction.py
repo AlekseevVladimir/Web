@@ -27,10 +27,12 @@ class Socket():
 	port=443
 	
 	def __init__(self):
+		print("sock init")
 		self.sock=socket.socket()
 		self.sock.connect((self.url, self.port))
 		
 	def __del__(self):
+		print("destroyed")
 		self.logout()
 		self.sock.close()
 	
@@ -61,6 +63,7 @@ class Socket():
 			response = struct.unpack('L', response)[0]
 		else:
 			return response
+		print(response)
 		if response != Result.OKEY.value:
 			while True:
 				ready, a, b = select.select([self.sock], [], [], 10)
@@ -71,13 +74,14 @@ class Socket():
 		datalen = self.sock.recv(4)
 		datalen = struct.unpack('L', datalen)[0]
 		if datalen:
+			print("\nlen(data)\n")
+			print(datalen)
 			self.sock.settimeout(10)
 			data = self.sock.recv(datalen)
-			datalen -= len(data)
-			while datalen > 0:
+			while datalen > len(data):
 				data += self.sock.recv(datalen)
-				datalen -= len(data)
 			data = data.decode('utf8').replace("\n", '').replace(" ", '')
+			print(data)
 			data = json.loads(data)
 			return response, data
 		return response
@@ -94,6 +98,7 @@ class Socket():
 		return data
 	
 	def getmap(self, layer):
+		print(layer)
 		string = json.dumps({"layer": layer})
 		return self.action(Action.MAP.value, string)
 	

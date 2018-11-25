@@ -1,6 +1,32 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
+def getOptions(train, lines):
+	options=list()
+	linesWTrains=[x for x in lines if x["idx"]==train["line_idx"]]
+	linesWTrains=linesWTrains[0]
+	print(linesWTrains)
+	if train["position"]!=0 and train["position"]!=linesWTrains["length"]:
+		options=linesWTrains["points"]
+	elif train["position"]==0:
+		for i in lines:
+			if linesWTrains["points"][0]==i["points"][0]:
+				options.append(i["points"][1])
+			elif linesWTrains["points"][0]==i["points"][1]:
+				options.append(i["points"][0])
+	else:
+		for i in lines:
+			if linesWTrains["points"][1]==i["points"][0]:
+				options.append(i["points"][1])
+			elif linesWTrains["points"][1]==i["points"][1]:
+				options.append(i["points"][1])
+				
+	return options
+	
+	
+
+
 def parseMap(map):
 	graph=nx.Graph()
 	graph.add_nodes_from([i['idx'] for i in map['points']])
