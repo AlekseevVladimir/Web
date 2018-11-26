@@ -1,9 +1,10 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 
-#train- элемент json_map["trains"] map-граф, содержащий карту
+#trains-json_map["trains"] map-граф, содержащий карту
 #функция возвращает список вершин, в которые поезд может отправиться в данный момент
-def getOptions(train, map):
+def getOptions(trains, trainIdx, map):
+	train=[i for i in trains if trainIdx == i["idx"]][0]
 	options=list()
 	points=map.edges()
 	lines={v:k for k, v in nx.get_edge_attributes(map, "idx").items()}
@@ -25,7 +26,28 @@ def getOptions(train, map):
 				
 	return options
 	
-	
+#trains-json_map["trains"], map-граф, содержащий карту
+#targetPoint-точка назначения, trainIdx-индекс выбранного поезда
+def moveTrains(trains, map, targetPoint, trainIdx):
+	train=[i for i in trains if trainIdx == i["idx"]][0]
+	points=list(map.edges().keys())
+	lines={v:k for k, v in nx.get_edge_attributes(map, "idx").items()}
+	if train["position"]==0:
+		currentPoint=lines[train["line_idx"]][0]
+	else:
+		currentPoint=lines[train["line_idx"]][1]
+	if targetPoint in lines[train["line_idx"]]:
+		if targetPoint==lines[train["line_idx"]][0]:
+			speed=-1
+		else:
+			speed=1
+	elif (currentPoint, targetPoint) in points:
+		speed=1
+		lineIdx=map.edges()[currentPoint, targetPoint]["idx"]
+	else:
+		lineIdx=map.edges()[targetPoint, currentPoint]["idx"]
+		speed=-1
+	return lineIdx, speed, train["idx"]
 
 #json_data-нулевой слой карты, функция преобразует карту из формата json в граф, возвращает полученный граф
 def parseMap(jsonData):
@@ -57,7 +79,6 @@ def parseTrains(trains, map):
 		if i["goods_type"]!=None:
 			string+=' '+str(i["goods"])
 		buttons.append(string)
-	print(buttons)
 	trains=[x for x in trains if x["position"]!=0 and x["position"]!=length[x["line_idx"]]]
 	pos=nx.get_node_attributes(map, "pos")
 	if trains:
@@ -68,8 +89,6 @@ def parseTrains(trains, map):
 			trainPos[i["idx"]]=list(trainPos[i["idx"]][0])
 		for i in trains:
 			graph.add_node(i["idx"], pos=trainPos[i["idx"]])
-		print('buttons')	
-		print(buttons)
 		return graph, buttons
 	else:
 		return 0, buttons
