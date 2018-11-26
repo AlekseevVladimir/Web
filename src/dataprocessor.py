@@ -2,11 +2,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 
-# train- элемент json_map["trains"] map-граф, содержащий карту
-# функция возвращает список вершин, в которые поезд может отправиться в данный момент
-
 positionNodes = False
 
+# train- элемент json_map["trains"] map-граф, содержащий карту
+# функция возвращает список вершин, в которые поезд может отправиться в данный момент
 def getOptions(train, map):
 	options = list()
 	points = map.edges()
@@ -33,7 +32,6 @@ def getOptions(train, map):
 # json_data-нулевой слой карты, функция преобразует карту из формата json в граф, возвращает полученный граф
 def parseMap(jsonData):
 	global positionNodes
-
 	graph = nx.Graph()
 	graph.add_nodes_from([i['idx'] for i in jsonData['points']])
 	graph.add_weighted_edges_from([(i['points'][0], i['points'][1], i['length']) for i in jsonData['lines']])
@@ -56,7 +54,7 @@ def parseMap(jsonData):
 
 # trains-json_map["trains"], map-граф, содержащий карту
 # возвращает граф, содержащий поезда и список кнопок для каждого поезда
-def parseTrains(trains, map, posTrain):
+def parseTrains(trains, map):
 	graph = nx.Graph()
 	lines = {v: k for k, v in nx.get_edge_attributes(map, "idx").items()}
 	length = nx.get_edge_attributes(map, "weight")
@@ -69,7 +67,6 @@ def parseTrains(trains, map, posTrain):
 		buttons.append(string)
 	print(buttons)
 	trains = [x for x in trains ]#if x["position"] != 0 and x["position"] != length[x["line_idx"]]]
-	trains[0]['position'] = posTrain
 	pos = nx.get_node_attributes(map, "pos")
 	if trains:
 		vec = [pos[lines[i["line_idx"]][1]] - pos[lines[i["line_idx"]][0]] for i in trains]
