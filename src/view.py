@@ -80,7 +80,7 @@ class PrettyWidget(QWidget):
 	# 	self.canvas.draw_idle()
 
 	def graph_server(self,posTrain):
-
+		self.figure.clf()
 		response, json_map = self.server.getmap(0)
 		if not response:
 			graph = parseMap(json_map)
@@ -97,7 +97,6 @@ class PrettyWidget(QWidget):
 		data, isOk = QInputDialog.getText(self, "Sign in", "Input name")
 		if isOk:
 			self.server.login(str(data))
-			self.figure.clf()
 			self.graph_server(0)
 			time.sleep(1)
 			self.graph_server(0.2)
