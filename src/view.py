@@ -26,6 +26,7 @@ class PrettyWidget(QWidget):
 	def initUI(self):
 
 		self.setGeometry(100, 100, 800, 600)
+		self.setMinimumSize(500,300)
 		self.center()
 		self.setWindowTitle('Graph viewer')
 
@@ -79,7 +80,7 @@ class PrettyWidget(QWidget):
 	# 	createFigures(graph, graph_idx)
 	# 	self.canvas.draw_idle()
 
-	def graph_server(self,posTrain):
+	def graph_server(self):
 		self.figure.clf()
 		response, json_map = self.server.getmap(0)
 		if not response:
@@ -88,7 +89,7 @@ class PrettyWidget(QWidget):
 		response, json_map = self.server.getmap(1)
 		if not response:
 			self.trains = json_map["trains"]
-			trains, self.TrainButtons = parseTrains(json_map["trains"], graph, posTrain)
+			trains, self.TrainButtons = parseTrains(json_map["trains"], graph)
 			if trains: drawTrains(trains)
 		self.canvas.draw()
 		self.canvas.flush_events()
@@ -97,17 +98,7 @@ class PrettyWidget(QWidget):
 		data, isOk = QInputDialog.getText(self, "Sign in", "Input name")
 		if isOk:
 			self.server.login(str(data))
-			self.graph_server(0)
-			time.sleep(1)
-			self.graph_server(0.2)
-			time.sleep(1)
-			self.graph_server(0.4)
-			time.sleep(1)
-			self.graph_server(0.6)
-			time.sleep(1)
-			self.graph_server(0.8)
-			time.sleep(1)
-			self.graph_server(1)
+			self.graph_server()
 
 	def logout(self):
 		self.figure.clf()
