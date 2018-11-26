@@ -6,9 +6,10 @@ from PyQt5.QtGui import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from dataprocessor import parseMap, drawMap
+from dataprocessor import parseMap, drawMap, parseTrains, drawTrains, positionNodes
 from serverinteraction import Socket
 from main import parse
+import time
 
 
 class PrettyWidget(QWidget):
@@ -58,41 +59,56 @@ class PrettyWidget(QWidget):
 	def submitCommand(self):
 		eval('self.' + str(self.sender().objectName()) + '()')
 
-	def big_graph(self):
-		self.figure.clf()
-		graph2, graph_idx = parse(json.load(open('../test_graphs/big_graph.json')))
-		createFigures(graph2, graph_idx)
-		self.canvas.draw_idle()
+	# def big_graph(self):
+	# 	self.figure.clf()
+	# 	graph2, graph_idx = parse(json.load(open('../test_graphs/big_graph.json')))
+	# 	createFigures(graph2, graph_idx)
+	# 	self.canvas.draw_idle()
+	#
+	# def small_graph(self):
+	# 	self.figure.clf()
+	# 	graph, graph_idx = parse(json.load(open('../test_graphs/small_graph.json')))
+	# 	createFigures(graph, graph_idx)
+	# 	self.canvas.draw_idle()
+	#
+	# def custom_graph(self):
+	# 	self.figure.clf()
+	# 	#graph1, graph_idx = parse(json.load(open('../test_graphs/small_graph.json')))
+	# 	#createFigures(graph1, graph_idx)
+	# 	graph, graph_idx = parse(json.load(open('../test_graphs/custom_graph.json')))
+	# 	createFigures(graph, graph_idx)
+	# 	self.canvas.draw_idle()
 
-	def small_graph(self):
-		self.figure.clf()
-		graph, graph_idx = parse(json.load(open('../test_graphs/small_graph.json')))
-		createFigures(graph, graph_idx)
-		self.canvas.draw_idle()
+	def graph_server(self,posTrain):
 
-	def custom_graph(self):
-		self.figure.clf()
-		#graph1, graph_idx = parse(json.load(open('../test_graphs/small_graph.json')))
-		#createFigures(graph1, graph_idx)
-		graph, graph_idx = parse(json.load(open('../test_graphs/custom_graph.json')))
-		createFigures(graph, graph_idx)
-		self.canvas.draw_idle()
+		response, json_map = self.server.getmap(0)
+		if not response:
+			graph = parseMap(json_map)
+			drawMap(graph)
+		response, json_map = self.server.getmap(1)
+		if not response:
+			self.trains = json_map["trains"]
+			trains, self.TrainButtons = parseTrains(json_map["trains"], graph, posTrain)
+			if trains: drawTrains(trains)
+		self.canvas.draw()
+		self.canvas.flush_events()
 
-	def graph_server(self):
-		self.figure.clf()
-		json_map = self.server.getmap(0)
-		json_map = json_map[1]
-		print("json_map")
-		print(json_map)
-		graph = parseMap(json_map)
-		print(type(graph))
-		drawMap(graph)
-		self.canvas.draw_idle()
 	def signIn(self):
 		data, isOk = QInputDialog.getText(self, "Sign in", "Input name")
 		if isOk:
 			self.server.login(str(data))
-			self.graph_server()
+			self.figure.clf()
+			self.graph_server(0)
+			time.sleep(1)
+			self.graph_server(0.2)
+			time.sleep(1)
+			self.graph_server(0.4)
+			time.sleep(1)
+			self.graph_server(0.6)
+			time.sleep(1)
+			self.graph_server(0.8)
+			time.sleep(1)
+			self.graph_server(1)
 
 	def logout(self):
 		self.figure.clf()
