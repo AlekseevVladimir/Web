@@ -6,8 +6,10 @@ from PyQt5.QtGui import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from main import createFigures,parse
+from dataprocessor import parseMap, drawMap, parseTrains, drawTrains, positionNodes
 from serverinteraction import Socket
+from main import parse
+import time
 
 
 class PrettyWidget(QWidget):
@@ -24,6 +26,7 @@ class PrettyWidget(QWidget):
 	def initUI(self):
 
 		self.setGeometry(100, 100, 800, 600)
+		self.setMinimumSize(500,300)
 		self.center()
 		self.setWindowTitle('Graph viewer')
 
@@ -57,33 +60,40 @@ class PrettyWidget(QWidget):
 	def submitCommand(self):
 		eval('self.' + str(self.sender().objectName()) + '()')
 
-	def big_graph(self):
-		self.figure.clf()
-		graph2, graph_idx = parse(json.load(open('../test_graphs/big_graph.json')))
-		createFigures(graph2, graph_idx)
-		self.canvas.draw_idle()
-
-	def small_graph(self):
-		self.figure.clf()
-		graph, graph_idx = parse(json.load(open('../test_graphs/small_graph.json')))
-		createFigures(graph, graph_idx)
-		self.canvas.draw_idle()
-
-	def custom_graph(self):
-		self.figure.clf()
-		#graph1, graph_idx = parse(json.load(open('../test_graphs/small_graph.json')))
-		#createFigures(graph1, graph_idx)
-		graph, graph_idx = parse(json.load(open('../test_graphs/custom_graph.json')))
-		createFigures(graph, graph_idx)
-		self.canvas.draw_idle()
+	# def big_graph(self):
+	# 	self.figure.clf()
+	# 	graph2, graph_idx = parse(json.load(open('../test_graphs/big_graph.json')))
+	# 	createFigures(graph2, graph_idx)
+	# 	self.canvas.draw_idle()
+	#
+	# def small_graph(self):
+	# 	self.figure.clf()
+	# 	graph, graph_idx = parse(json.load(open('../test_graphs/small_graph.json')))
+	# 	createFigures(graph, graph_idx)
+	# 	self.canvas.draw_idle()
+	#
+	# def custom_graph(self):
+	# 	self.figure.clf()
+	# 	#graph1, graph_idx = parse(json.load(open('../test_graphs/small_graph.json')))
+	# 	#createFigures(graph1, graph_idx)
+	# 	graph, graph_idx = parse(json.load(open('../test_graphs/custom_graph.json')))
+	# 	createFigures(graph, graph_idx)
+	# 	self.canvas.draw_idle()
 
 	def graph_server(self):
 		self.figure.clf()
-		json_map = self.server.getmap(0)
-		print(json_map)
-		graph, graph_idx = parse(json_map)
-		createFigures(graph, graph_idx)
-		self.canvas.draw_idle()
+		response, json_map = self.server.getmap(0)
+		if not response:
+			graph = parseMap(json_map)
+			drawMap(graph)
+		response, json_map = self.server.getmap(1)
+		if not response:
+			self.trains = json_map["trains"]
+			trains, self.TrainButtons = parseTrains(json_map["trains"], graph)
+			if trains: drawTrains(trains)
+		self.canvas.draw()
+		self.canvas.flush_events()
+
 	def signIn(self):
 		data, isOk = QInputDialog.getText(self, "Sign in", "Input name")
 		if isOk:
