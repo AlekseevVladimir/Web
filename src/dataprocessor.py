@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 
 # train- элемент json_map["trains"] map-граф, содержащий карту
 # функция возвращает список вершин, в которые поезд может отправиться в данный момент
+
+positionNodes = False
+
 def getOptions(train, map):
 	options = list()
 	points = map.edges()
@@ -29,6 +32,8 @@ def getOptions(train, map):
 
 # json_data-нулевой слой карты, функция преобразует карту из формата json в граф, возвращает полученный граф
 def parseMap(jsonData):
+	global positionNodes
+
 	graph = nx.Graph()
 	graph.add_nodes_from([i['idx'] for i in jsonData['points']])
 	graph.add_weighted_edges_from([(i['points'][0], i['points'][1], i['length']) for i in jsonData['lines']])
@@ -36,8 +41,12 @@ def parseMap(jsonData):
 	for i in jsonData["lines"]:
 		valList[tuple(i["points"])] = i["idx"]
 	nx.set_edge_attributes(graph, valList, "idx")
-	pos = nx.spring_layout(graph, iterations=200)
-	pos = nx.kamada_kawai_layout(graph, weight=None, pos=pos)
+	if not positionNodes:
+		pos = nx.spring_layout(graph, iterations=200)
+		pos = nx.kamada_kawai_layout(graph, weight=None, pos=pos)
+		positionNodes = pos
+	else:
+		pos = positionNodes
 	valList = dict()
 	for i in jsonData["points"]:
 		valList[i["idx"]] = pos[i["idx"]]
@@ -47,7 +56,7 @@ def parseMap(jsonData):
 
 # trains-json_map["trains"], map-граф, содержащий карту
 # возвращает граф, содержащий поезда и список кнопок для каждого поезда
-def parseTrains(trains, map):
+def parseTrains(trains, map, posTrain):
 	graph = nx.Graph()
 	lines = {v: k for k, v in nx.get_edge_attributes(map, "idx").items()}
 	length = nx.get_edge_attributes(map, "weight")
@@ -59,14 +68,14 @@ def parseTrains(trains, map):
 			string += ' ' + str(i["goods"])
 		buttons.append(string)
 	print(buttons)
-	trains = [x for x in trains if x["position"] != 0 and x["position"] != length[x["line_idx"]]]
+	trains = [x for x in trains ]#if x["position"] != 0 and x["position"] != length[x["line_idx"]]]
+	trains[0]['position'] = posTrain
 	pos = nx.get_node_attributes(map, "pos")
 	if trains:
 		vec = [pos[lines[i["line_idx"]][1]] - pos[lines[i["line_idx"]][0]] for i in trains]
 		for i in trains:
 			trainPos = {
-				i["idx"]: [pos[lines[i["line_idx"]][0]] + x / length[tuple(lines[i["line_idx"]])] * i["position"] for x
-						   in vec]}
+				i["idx"]: [pos[lines[i["line_idx"]][0]] + x / length[tuple(lines[i["line_idx"]])] * i["position"] for x in vec]}
 		for i in trains:
 			trainPos[i["idx"]] = list(trainPos[i["idx"]][0])
 		for i in trains:
