@@ -10,6 +10,8 @@ from dataprocessor import getMoveOptions
 from time import time as timer
 from enum import Enum
 
+TIMEOUT = 10
+
 
 class MapLayer(Enum):
 	ZERO_LAYER = 0
@@ -21,7 +23,7 @@ class PrettyWidget(QWidget):
 		super(PrettyWidget, self).__init__()
 		self.server_interation = Socket()
 		self.button_sign_in = ['sign_in']
-		self.buttons_authorized_user = ['logout', 'Move', 'upgrade', 'player']
+		self.buttons_authorized_user = ['logout', 'move_train', 'upgrade', 'player']
 		self.buttonOk = ['OK']
 		self.graph = None
 		self.trains = None
@@ -104,44 +106,44 @@ class PrettyWidget(QWidget):
 			self.server_interation.login(str(data))
 			self.initial_map()
 
-	def Move(self):
+	def move_train(self):
 
 		self.vertical_group_box.setParent(None)
-		self.textVertex = QLabel()
-		self.textVertex.setText('Выберите вершину')
-		self.button_layout.addWidget(self.textVertex)
-		self.vertexComboBox = QComboBox()
+		self.text_vertex = QLabel()
+		self.text_vertex.setText('Выберите вершину')
+		self.button_layout.addWidget(self.text_vertex)
+		self.vertex_combo_box = QComboBox()
 		for i in getMoveOptions(self.trains, 1, self.graph):
-			self.vertexComboBox.addItem(str(i))
-		self.button_layout.addWidget(self.vertexComboBox)
+			self.vertex_combo_box.addItem(str(i))
+		self.button_layout.addWidget(self.vertex_combo_box)
 
-		self.textTrain = QLabel()
-		self.textTrain.setText('Выберите поезд')
-		self.button_layout.addWidget(self.textTrain)
-		self.trainComboBox = QComboBox()
+		self.text_train = QLabel()
+		self.text_train.setText('Выберите поезд')
+		self.button_layout.addWidget(self.text_train)
+		self.train_combo_box = QComboBox()
 		for i in self.trains:
 			count = 1
-			self.trainComboBox.addItem(str(count))
+			self.train_combo_box.addItem(str(count))
 			count = count + 1
-		self.button_layout.addWidget(self.trainComboBox)
+		self.button_layout.addWidget(self.train_combo_box)
 		self.create_vertical_group_box(self.buttonOk)
 		self.button_layout.addWidget(self.vertical_group_box)
 
 	# outputVertex- вершина выбранная пользователем,outputTrain - (индекс поезда-1) в массиве trains выбранный пользователем
 	def OK(self):
-		outputVertex = self.vertexComboBox.currentText()
-		outputTrain = self.trainComboBox.currentText()
-		self.trainComboBox.setParent(None)
-		self.vertexComboBox.setParent(None)
-		self.trainComboBox.setParent(None)
-		self.vertexComboBox.setParent(None)
-		self.textTrain.setParent(None)
-		self.textVertex.setParent(None)
-		print(outputVertex)
-		print(outputTrain)
-		lineIdx, speed, trainIdx = moveTrains(self.trains, self.graph, int(outputVertex), int(outputTrain))
-		print(lineIdx, speed, trainIdx)
-		self.server_interation.move(int(lineIdx), int(speed), int(trainIdx))
+		output_vertex = self.vertex_combo_box.currentText()
+		output_train = self.train_combo_box.currentText()
+		self.train_combo_box.setParent(None)
+		self.vertex_combo_box.setParent(None)
+		self.train_combo_box.setParent(None)
+		self.vertex_combo_box.setParent(None)
+		self.text_train.setParent(None)
+		self.text_vertex.setParent(None)
+		#print(output_vertex)
+		#print(output_train)
+		line_idx, speed, train_idx = moveTrains(self.trains, self.graph, int(output_vertex), int(output_train))
+		#print(line_idx, speed, train_idx)
+		self.server_interation.move(int(line_idx), int(speed), int(train_idx))
 		self.menu()
 
 
@@ -149,8 +151,6 @@ class PrettyWidget(QWidget):
 		self.figure.clf()
 		self.canvas.draw_idle()
 		self.server_interation.logout()
-
-	# self.close()
 
 	def center(self):
 		qr = self.frameGeometry()
@@ -160,7 +160,7 @@ class PrettyWidget(QWidget):
 
 
 if __name__ == '__main__':
-	timeout = 10
+	timeout = TIMEOUT
 	counter = timer()
 	app = QApplication(sys.argv)
 	app.aboutToQuit.connect(app.deleteLater)
@@ -168,17 +168,13 @@ if __name__ == '__main__':
 	screen = PrettyWidget()
 	while True:
 		QtWidgets.qApp.processEvents()
-		# print(timer() - counter)
 		if int(timer() - counter) == timeout:
 			counter = timer()
-			# print("asd")
 			screen.update_map()
 			draw_map(screen.graph)
-			# print(screen.trains)
 			trains = parseTrains(screen.trains, screen.graph)[0]
-			print(trains)
 			if trains:
 				drawTrains(trains)
+			print("-----------UPDATED------------")
 	screen.show()
-
 	sys.exit(app.exec_())
