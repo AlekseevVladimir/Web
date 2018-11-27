@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from dataprocessor import parseMap, draw_map, parseTrains, drawTrains, moveTrains
+from dataprocessor import parseMap, drawMap, parseTrains, drawTrains, moveTrains
 from serverinteraction import Socket
 from dataprocessor import getMoveOptions
 from time import time as timer
@@ -72,7 +72,7 @@ class PrettyWidget(QWidget):
 		response, json_map = self.server_interation.getmap(0)
 		if not response:
 			self.graph = parseMap(json_map)
-			draw_map(self.graph)
+			drawMap(self.graph)
 		response, json_map = self.server_interation.getmap(MapLayer.FIRST_LAYER.value)
 		if not response:
 			self.trains = json_map["trains"]
@@ -84,7 +84,7 @@ class PrettyWidget(QWidget):
 
 	def update_map(self):
 		self.figure.clf()
-		draw_map(self.graph)
+		drawMap(self.graph)
 		response, json_map = self.server_interation.getmap(MapLayer.FIRST_LAYER.value)
 		if not response:
 			self.trains = json_map["trains"]
@@ -171,7 +171,7 @@ if __name__ == '__main__':
 		if int(timer() - counter) == timeout:
 			counter = timer()
 			screen.update_map()
-			draw_map(screen.graph)
+			drawMap(screen.graph)
 			trains = parseTrains(screen.trains, screen.graph)[0]
 			if trains:
 				drawTrains(trains)
