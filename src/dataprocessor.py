@@ -11,11 +11,6 @@ def getMoveOptions(trains, trainIdx, map):
 	connectedPoints = map.edges()
 	lines = {v: k for k, v in nx.get_edge_attributes(map, "idx").items()}
 	length = nx.get_edge_attributes(map, "weight")
-	# print("TEST")
-	# print(length)
-	# print(train["line_idx"])
-	# print(train["position"])
-	# print(length[lines[train["line_idx"]]])
 	if train["position"] != 0 and train["position"] != length[lines[train["line_idx"]]]:
 		options = lines[train["line_idx"]]
 	elif train["position"] == 0:
@@ -30,7 +25,6 @@ def getMoveOptions(trains, trainIdx, map):
 				options.append(i[1])
 			elif lines[train["line_idx"]][1] == i[1]:
 				options.append(i[0])
-
 	return options
 
 
@@ -43,25 +37,34 @@ def moveTrains(trains, map, targetPoint, trainIdx):
 	lineIdx = train["line_idx"]
 	connectedPoints = map.edges()
 	lines = {v: k for k, v in nx.get_edge_attributes(map, "idx").items()}
+	print("TEST")
+	print(train)
+	print(lines[train["line_idx"]])
+	print(lines)
+
+	print(targetPoint)
 	if train["position"] == 0:
 		currentPoint = lines[train["line_idx"]][0]
 	else:
 		currentPoint = lines[train["line_idx"]][1]
+	print(currentPoint)
 	if targetPoint in lines[train["line_idx"]]:
+		print("TEST1")
 		if targetPoint == lines[train["line_idx"]][0]:
 			speed = -1
 		else:
 			speed = 1
-	elif (currentPoint, targetPoint) in connectedPoints:
-		speed = 1
-		lineIdx = map.edges()[currentPoint, targetPoint]["idx"]
-		#print("LineIdx12")
-	# print(LineIdx)
 	else:
-		lineIdx = map.edges()[targetPoint, currentPoint]["idx"]
-		#print("LineIdx1")
-		# print(LineIdx)
-		speed = -1
+		for i in connectedPoints:
+			if i[0] == currentPoint and i[1] == targetPoint:
+				print("TEST2")
+				speed = 1
+				lineIdx = map.edges()[currentPoint, targetPoint]["idx"]
+				break
+			elif i[1] == currentPoint and i[0] == targetPoint:
+				print("TEST3")
+				speed = -1
+				lineIdx = map.edges()[targetPoint, currentPoint]["idx"]
 	return lineIdx, speed, train["idx"]
 
 
@@ -74,7 +77,7 @@ def parseMap(jsonData):
 	for i in jsonData["lines"]:
 		valList[tuple(i["points"])] = i["idx"]
 	nx.set_edge_attributes(graph, valList, "idx")
-	pos = nx.spring_layout(graph, iterations=200)
+	pos = nx.spring_layout(graph)
 	pos = nx.kamada_kawai_layout(graph, pos=pos)
 	valList = dict()
 	for i in jsonData["points"]:
@@ -96,29 +99,17 @@ def parseTrains(trains, map):
 		if i["goods_type"] != None:
 			string += ' ' + str(i["goods"])
 		buttons.append(string)
-	# trains=[x for x in trains if x["position"]!=0 and x["position"]!=length[x["line_idx"]]]
 	pos = nx.get_node_attributes(map, "pos")
-	#print(trains)
 	if trains:
 		vec = [pos[lines[i["line_idx"]][1]] - pos[lines[i["line_idx"]][0]] for i in trains]
-		#print("vec")
-		#print(vec)
 		for i in trains:
 			trainPos = {
 				i["idx"]: [pos[lines[i["line_idx"]][0]] + x / length[tuple(lines[i["line_idx"]])] * i["position"] for x
 						   in vec]}
-		#print("trainPos")
-		#print(trainPos)
 		for i in trains:
 			trainPos[i["idx"]] = list(trainPos[i["idx"]][0])
-		#print("trainPos1")
-		#print(trainPos)
 		for i in trains:
-			#print("trainPos[i")
-			#print(trainPos[i["idx"]])
 			graph.add_node(i["idx"], pos=trainPos[i["idx"]])
-			#print("trainPos[i2")
-			#print(nx.get_node_attributes(graph, "pos"))
 		return graph, buttons
 	else:
 		return 0, buttons
@@ -127,17 +118,14 @@ def parseTrains(trains, map):
 # trains-граф, возвращаемый parseTrains, отрисовывает поезда
 def drawTrains(trains):
 	NODESIZE = 100
-	#print(nx.get_node_attributes(trains, "pos"))
 	pos = nx.get_node_attributes(trains, "pos")
 	nx.draw(trains, pos, node_color="blue", node_size=NODESIZE)
 
 
 # map-граф, возвращаемый parseMap, отрисовывает карту
-def draw_map(map):
+def drawMap(map):
 	pos = nx.get_node_attributes(map, "pos")
 	labels = nx.get_edge_attributes(map, 'weight')
-	#print(map.edges().keys())
 	NODESIZE = 200
 	nx.draw(map, pos, with_labels=True, nodecolor='r', edge_color='b', node_size=NODESIZE, font_size=8)
 	nx.draw_networkx_edge_labels(map, pos, edge_labels=labels)
-
