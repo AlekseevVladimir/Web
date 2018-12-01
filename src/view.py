@@ -23,11 +23,11 @@ class PrettyWidget(QWidget):
 		super(PrettyWidget, self).__init__()
 		self.server_interation = Socket()
 		self.button_sign_in = ['sign_in']
-		self.buttons_authorized_user = ['logout', 'move_train', 'upgrade', 'player']
-		self.buttonOk = ['OK']
+		self.button_logout = ['logout']
+		#self.buttonOk = ['OK']
 		self.graph = None
 		self.trains = None
-		self.train_buttons = None
+		#self.train_buttons = None
 		self.initUI()
 
 	def initUI(self):
@@ -94,7 +94,7 @@ class PrettyWidget(QWidget):
 
 	def menu(self):
 		self.vertical_group_box.setParent(None)
-		self.create_vertical_group_box(self.buttons_authorized_user)
+		self.create_vertical_group_box(self.button_logout)
 		self.button_layout.addWidget(self.vertical_group_box)
 
 	def sign_in(self):
@@ -105,47 +105,6 @@ class PrettyWidget(QWidget):
 			self.menu()
 			self.server_interation.login(str(data))
 			self.initial_map()
-
-	def move_train(self):
-
-		self.vertical_group_box.setParent(None)
-		self.text_vertex = QLabel()
-		self.text_vertex.setText('Выберите вершину')
-		self.button_layout.addWidget(self.text_vertex)
-		self.vertex_combo_box = QComboBox()
-		for i in getMoveOptions(self.trains, 1, self.graph):
-			self.vertex_combo_box.addItem(str(i))
-		self.button_layout.addWidget(self.vertex_combo_box)
-
-		self.text_train = QLabel()
-		self.text_train.setText('Выберите поезд')
-		self.button_layout.addWidget(self.text_train)
-		self.train_combo_box = QComboBox()
-		for i in self.trains:
-			count = 1
-			self.train_combo_box.addItem(str(count))
-			count = count + 1
-		self.button_layout.addWidget(self.train_combo_box)
-		self.create_vertical_group_box(self.buttonOk)
-		self.button_layout.addWidget(self.vertical_group_box)
-
-	# outputVertex- вершина выбранная пользователем,outputTrain - (индекс поезда-1) в массиве trains выбранный пользователем
-	def OK(self):
-		output_vertex = self.vertex_combo_box.currentText()
-		output_train = self.train_combo_box.currentText()
-		self.train_combo_box.setParent(None)
-		self.vertex_combo_box.setParent(None)
-		self.train_combo_box.setParent(None)
-		self.vertex_combo_box.setParent(None)
-		self.text_train.setParent(None)
-		self.text_vertex.setParent(None)
-		#print(output_vertex)
-		#print(output_train)
-		line_idx, speed, train_idx = moveTrains(self.trains, self.graph, int(output_vertex), int(output_train))
-		#print(line_idx, speed, train_idx)
-		self.server_interation.move(int(line_idx), int(speed), int(train_idx))
-		self.menu()
-
 
 	def logout(self):
 		self.figure.clf()
