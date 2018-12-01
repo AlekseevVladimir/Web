@@ -1,6 +1,10 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 
+class PostType(object):
+    TOWN = 1
+    MARKET = 2
+    STORAGE = 3
 
 # trains-json_map["trains"] map-граф, содержащий карту
 # функция возвращает список вершин, в которые поезд может отправиться в данный момент
@@ -94,6 +98,7 @@ def parseTrains(trains, map):
 	length = nx.get_edge_attributes(map, "weight")
 	goodstype = {1: "armor", 2: "products", None: "Empty"}
 	buttons = list()
+
 	for i in trains:
 		string = "Index:" + str(i["idx"]) + "\nGoods:" + str(goodstype[i["goods_type"]])
 		if i["goods_type"] != None:
@@ -104,8 +109,8 @@ def parseTrains(trains, map):
 		vec = [pos[lines[i["line_idx"]][1]] - pos[lines[i["line_idx"]][0]] for i in trains]
 		for i in trains:
 			trainPos = {
-				i["idx"]: [pos[lines[i["line_idx"]][0]] + x / length[tuple(lines[i["line_idx"]])] * i["position"] for x
-						   in vec]}
+				i["idx"]: [pos[lines[i["line_idx"]][0]] + x / length[tuple(lines[i["line_idx"]])]
+						   * i["position"] for x in vec]}
 		for i in trains:
 			trainPos[i["idx"]] = list(trainPos[i["idx"]][0])
 		for i in trains:
@@ -123,9 +128,28 @@ def drawTrains(trains):
 
 
 # map-граф, возвращаемый parseMap, отрисовывает карту
-def drawMap(map):
-	pos = nx.get_node_attributes(map, "pos")
-	labels = nx.get_edge_attributes(map, 'weight')
+def drawMap(graph, map_layer_first):
+	pos = nx.get_node_attributes(graph, "pos")
+	type_posts = define_post_type(map_layer_first)
+	labels = nx.get_edge_attributes(graph, 'weight')
 	NODESIZE = 200
-	nx.draw(map, pos, with_labels=True, nodecolor='r', edge_color='b', node_size=NODESIZE, font_size=8)
-	nx.draw_networkx_edge_labels(map, pos, edge_labels=labels)
+	nx.draw(graph,pos, with_labels=True, node_color='gray', node_size = NODESIZE, font_size= 8)
+	nx.draw_networkx_nodes(graph, pos, nodelist=type_posts[PostType.TOWN-1], node_color='green', node_size=NODESIZE)
+	nx.draw_networkx_nodes(graph, pos, nodelist=type_posts[PostType.MARKET-1], node_color='red', node_size=NODESIZE)
+	nx.draw_networkx_nodes(graph, pos, nodelist=type_posts[PostType.STORAGE-1], node_color='pink', node_size=NODESIZE)
+	nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
+
+
+#первый слой map json
+def define_post_type(map_layer_first):
+	town_idx = []
+	market_idx = []
+	storage_idx = []
+	for i in map_layer_first[1]["posts"]:
+		if i["type"] == PostType.TOWN:
+			town_idx.append(i["point_idx"])
+		elif i["type"] == PostType.MARKET:
+			market_idx.append(i["point_idx"])
+		elif i["type"] == PostType.STORAGE:
+			storage_idx.append(i["idx"])
+	return town_idx, market_idx, storage_idx
