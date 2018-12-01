@@ -4,13 +4,12 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from dataprocessor import parseMap, drawMap, parseTrains, drawTrains, moveTrains
+from dataprocessor import parseMap, drawMap, parseTrains, drawTrains, moveTrains, define_post_type
 from serverinteraction import Socket
-from dataprocessor import getMoveOptions
 from time import time as timer
 from enum import Enum
 
-TIMEOUT = 10
+TIMEOUT = 1
 
 
 class MapLayer(Enum):
@@ -27,8 +26,10 @@ class PrettyWidget(QWidget):
 		#self.buttonOk = ['OK']
 		self.graph = None
 		self.trains = None
+		self.isSignIn = False
 		#self.train_buttons = None
 		self.initUI()
+
 
 	def initUI(self):
 		font = QFont()
@@ -72,7 +73,7 @@ class PrettyWidget(QWidget):
 		response, json_map = self.server_interation.getmap(0)
 		if not response:
 			self.graph = parseMap(json_map)
-			drawMap(self.graph)
+			drawMap(self.graph, self.server_interation.getmap(MapLayer.FIRST_LAYER.value))
 		response, json_map = self.server_interation.getmap(MapLayer.FIRST_LAYER.value)
 		if not response:
 			self.trains = json_map["trains"]
@@ -84,7 +85,7 @@ class PrettyWidget(QWidget):
 
 	def update_map(self):
 		self.figure.clf()
-		drawMap(self.graph)
+		drawMap(self.graph, self.server_interation.getmap(MapLayer.FIRST_LAYER.value))
 		response, json_map = self.server_interation.getmap(MapLayer.FIRST_LAYER.value)
 		if not response:
 			self.trains = json_map["trains"]
@@ -105,11 +106,13 @@ class PrettyWidget(QWidget):
 			self.menu()
 			self.server_interation.login(str(data))
 			self.initial_map()
+			self.isSignIn = True
 
 	def logout(self):
 		self.figure.clf()
 		self.canvas.draw_idle()
 		self.server_interation.logout()
+		self.isSignIn = False
 
 	def center(self):
 		qr = self.frameGeometry()
@@ -119,18 +122,21 @@ class PrettyWidget(QWidget):
 
 
 if __name__ == '__main__':
-	timeout = TIMEOUT
+	# server = Socket()
+	# server.login("Dima")
+	# json = server.getmap(MapLayer.FIRST_LAYER.value)
+
 	counter = timer()
 	app = QApplication(sys.argv)
 	app.aboutToQuit.connect(app.deleteLater)
 	app.setStyle(QStyleFactory.create("gtk"))
 	screen = PrettyWidget()
-	while True:
+	while screen.isSignIn:
 		QtWidgets.qApp.processEvents()
-		if int(timer() - counter) == timeout:
+		if int(timer() - counter) == TIMEOUT:
 			counter = timer()
 			screen.update_map()
-			drawMap(screen.graph)
+			#drawMap(screen.graph)
 			trains = parseTrains(screen.trains, screen.graph)[0]
 			if trains:
 				drawTrains(trains)
