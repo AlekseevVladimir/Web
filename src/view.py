@@ -10,6 +10,7 @@ from map import Map, PostType
 from serverinteraction import Socket
 from time import time as timer
 from enum import Enum
+from manageaction import ManageAction
 import networkx as nx
 import random
 
@@ -98,29 +99,9 @@ class PrettyWidget(QWidget):
 
 	def update(self):
 		map_layer_first = self.server_interation.getmap(MapLayer.FIRST_LAYER.value)[1]
-		train = map_layer_first["trains"][0]
-		is_node = position_is_node(nx.get_edge_attributes(self.map.graph, "idx").items(),nx.get_edge_attributes(self.map.graph, "weight").items()
-								   ,train['line_idx'], train['position'])
-		if is_node[0] and (is_node[1] in self.map.town or is_node[1] in self.map.market):
-			if is_node[1] in self.map.town:
-				idx_market = 0#random.randint(0, len(self.map.market)-1)#need def, which calculated most efficence market
-				self.shortest_path = nx.shortest_path(self.map.graph, source= self.map.town[0], target=self.map.market[idx_market])
-				res = moveTrains(map_layer_first['trains'], self.map.graph,
-								 self.shortest_path[self.shortest_path.index(is_node[1]) + 1], 1)
-				self.server_interation.move(res[0], res[1], res[2])
-			else:
-				idx_market = is_node[1]
-				self.shortest_path = nx.shortest_path(self.map.graph, source=idx_market,
-													  target=self.map.town[0])
-				res = moveTrains(map_layer_first['trains'], self.map.graph,
-								 self.shortest_path[self.shortest_path.index(is_node[1]) + 1], 1)
-				self.server_interation.move(res[0], res[1], res[2])
-		elif is_node[0]:
-			res = moveTrains(map_layer_first['trains'], self.map.graph,
-								 self.shortest_path[self.shortest_path.index(is_node[1]) + 1], 1)
-			self.server_interation.move(res[0], res[1], res[2])
-
-
+		res = self.manage_action.update_action(map_layer_first)
+		if res:
+			self.server_interation.move(res[0],res[1],res[2])
 
 	def menu(self):
 		self.vertical_group_box.setParent(None)
@@ -135,6 +116,7 @@ class PrettyWidget(QWidget):
 			self.menu()
 			self.server_interation.login(str(data))
 			self.map = Map(self.server_interation.getmap(MapLayer.ZERO_LAYER.value), self.server_interation.getmap(MapLayer.FIRST_LAYER.value))
+			self.manage_action = ManageAction(self.map)
 			self.initial_map()
 			self.isSignIn = True
 
@@ -168,7 +150,7 @@ if __name__ == '__main__':
 		if screen.isSignIn and isFirstSignIn:
 			counter = timer()
 			isFirstSignIn = False
-		if screen.isSignIn and int(timer() - counter) >= TIMEOUT :
+		if screen.isSignIn and int(timer() - counter) >= TIMEOUT:
 			counter = timer()
 			screen.update_map()
 			#drawMap(screen.graph)
