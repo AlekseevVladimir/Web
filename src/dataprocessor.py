@@ -107,12 +107,3 @@ def position_is_node(edges_idx, edges_weight, line_idx, position):
 		return (True, end)
 	else:
 		return (False, -1)
-
-
-
-
-
-
-
-
-
