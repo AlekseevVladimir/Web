@@ -19,7 +19,7 @@ def define_post_type(map_layer_first):
 		elif i["type"] == PostType.MARKET:
 			market_idx.append(i["point_idx"])
 		elif i["type"] == PostType.STORAGE:
-			storage_idx.append(i["idx"])
+			storage_idx.append(i["point_idx"])
 	return town_idx, market_idx, storage_idx
 
 class Map(object):
@@ -29,3 +29,15 @@ class Map(object):
 		self.town, self.market, self.storage = define_post_type(json_map_layer_first[1])
 		self.without_type = [x for x in self.graph.nodes if not x in self.town
 							 if not x in self.market if not x in self.storage]
+
+	def define_type_node(self, node):
+		if node in self.town:
+			return PostType.TOWN
+		elif node in self.market:
+			return PostType.MARKET
+		elif node in self.storage:
+			return PostType.STORAGE
+		else:
+			return False
+
+
