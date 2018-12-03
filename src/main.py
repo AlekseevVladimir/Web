@@ -2,6 +2,7 @@ import json
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
 def parse(json_file):
 	graph = nx.Graph()
 	graph.add_nodes_from([i['idx'] for i in json_file['points']])
@@ -11,13 +12,21 @@ def parse(json_file):
 
 def createFigures(graph, graph_idx):
 	plt.figure(graph_idx)
-	pos = nx.kamada_kawai_layout(graph, weight=None)
+	pos = nx.spring_layout(graph, iterations=200)
+	pos = nx.kamada_kawai_layout(graph, weight=None, pos=pos)
 	labels = nx.get_edge_attributes(graph, 'weight')
 	nodeSize = 200
 	nx.draw(graph, pos, with_labels=True, nodecolor='r', edge_color='b', node_size=nodeSize, font_size=8)
 	nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
 	
-	
+def parseMap(graph):
+	pos = nx.kamada_kawai_layout(graph, weight=None)
+	labels = nx.get_edge_attributes(graph, 'weight')
+	nodeSize = 200
+	nx.draw(graph, pos, with_labels=True, nodecolor='r', edge_color='b', node_size=nodeSize, font_size=8)
+	nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
+
+
 def main():
 	while True:
 		print("choose graph:\n1:small graph\n2:big graph\n3:custom graph\n4:custom graph 2\n5:custom graph 3\n0 to exit")
