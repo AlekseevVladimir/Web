@@ -8,25 +8,24 @@ class PostType(object):
 
 LOADPERTURN=8
 class WorldMap(object):
-	def __init__(self, Map_layer_zero, Map_layer_one):
+	def __init__(self, map_layer_zero, map_layer_one):
 		self.lines=dict()
 		self.lines_length=dict()
-		self.parse_Map(Map_layer_zero, Map_layer_one)
-		self.drawMap()
+		self.parse_map(map_layer_zero, map_layer_one)
 		
 	
-	def parse_Map(self, Map_layer_zero, Map_layer_one):
+	def parse_map(self, map_layer_zero, map_layer_one):
 		self.graph = nx.Graph()
-		self.graph.add_nodes_from([i['idx'] for i in Map_layer_zero['points']])
+		self.graph.add_nodes_from([i['idx'] for i in map_layer_zero['points']])
 		self.graph.add_weighted_edges_from([(i['points'][0], 
 										i['points'][1], i['length']) 
-										for i in Map_layer_zero['lines']])
-		for i in Map_layer_zero["lines"]:
+										for i in map_layer_zero['lines']])
+		for i in map_layer_zero["lines"]:
 			self.lines[i["idx"]]=i["points"]
 			self.lines_length[i["idx"]]=i["length"]
 		pos = nx.spring_layout(self.graph)
 		self.pos = nx.kamada_kawai_layout(self.graph, pos=pos)
-		town, market, storage = define_post_type(Map_layer_one)
+		town, market, storage = define_post_type(map_layer_one["posts"])
 		points_idx=list(self.pos.keys())
 		self.color_Map=list()
 		for i in points_idx:
@@ -39,16 +38,21 @@ class WorldMap(object):
 			else:
 				self.color_Map.append("gray")
 	
-	def drawMap(self):
+	
+	def draw_map(self):
 		labels = nx.get_edge_attributes(self.graph, 'weight')
 		NODESIZE = 200
-		nx.draw(self.graph, self.pos, with_labels=True, node_color=self.color_Map, node_size = NODESIZE, font_size= 8)
+		nx.draw(self.graph, self.pos, with_labels=True, node_color=self.color_Map, 
+				node_size = NODESIZE, font_size= 8)
 		nx.draw_networkx_edge_labels(self.graph, self.pos, edge_labels=labels)
 
-def check_trains(Map_layer_first, routes, Map, waiting_time):
-	trains=Map_layer_first["trains"]
+		
+		
+def check_trains(map_layer_one, routes, Map, waiting_time):
+	trains=map_layer_one["trains"]
 	train=trains[0]
-	for i in Map_layer_first["posts"]:
+	posts=map_layer_one["posts"]
+	for i in posts:
 		if i["type"]==PostType.TOWN:
 			town=i
 	cur_position=dict()
@@ -59,35 +63,35 @@ def check_trains(Map_layer_first, routes, Map, waiting_time):
 			cur_position[i["idx"]]=Map.lines[i["line_idx"]][0]
 		else:
 			cur_position[i["idx"]]=-1
-	
-	lineIdx=0
+	line_idx=0
 	speed=0
-	trainIdx=0
+	train_idx=0
 	print(routes)
 	if routes:
 		if routes[train["idx"]][1][0]==cur_position[train["idx"]]:
 			del routes[train["idx"]][1][0]
-			if len(routes[train["idx"]][1]):
-				lineIdx, speed, trainIdx=moveTrains(trains, Map, routes[train["idx"]][1][0], train["idx"])
-			elif cur_position[train["idx"]]!=town["point_idx"]:
-				routes= calculate_routes(Map_layer_first, Map, PostType.TOWN, cur_position)
-				lineIdx, speed, trainIdx=moveTrains(trains, Map, routes[train["idx"]][1][0], train["idx"])
-			else:
-				routes, waiting_time=calculate_priorities(Map_layer_first, Map, cur_position)
-				lineIdx, speed, trainIdx=moveTrains(trains, Map, routes[train["idx"]][1][0], train["idx"])	
+			if not len(routes[train["idx"]][1]):
+				if cur_position[train["idx"]]!=town["point_idx"]:
+					routes= calculate_routes(trains, posts, Map, PostType.TOWN, cur_position)
+				else:
+					routes, waiting_time=calculate_priorities(trains, posts, Map, cur_position)
+		line_idx, speed, train_idx=move_trains(train, Map, routes[train["idx"]][1][0], 
+											train["idx"], cur_position[train["idx"]])
 	else:
 		print("5")
-		routes, waiting_time=calculate_priorities(Map_layer_first, Map, cur_position)
-		lineIdx, speed, trainIdx=moveTrains(trains, Map, routes[train["idx"]][1][0], train["idx"])	
-	return lineIdx, speed, trainIdx, routes, waiting_time
+		routes, waiting_time=calculate_priorities(trains, posts, Map, cur_position)
+		line_idx, speed, train_idx=move_trains(train, Map, routes[train["idx"]][1][0], 
+											train["idx"], cur_position[train["idx"]])	
+	return line_idx, speed, train_idx, routes, waiting_time
 
-def calculate_priorities(Map_layer_first, Map, cur_position):
-	trains=Map_layer_first["trains"]
+	
+	
+def calculate_priorities(trains, posts, Map, cur_position):
 	train=trains[0]
-	for i in Map_layer_first["posts"]:
+	for i in posts:
 		if i["type"]==PostType.TOWN:
 			town=i
-	routes= calculate_routes(Map_layer_first, Map, PostType.MARKET, cur_position)
+	routes= calculate_routes(trains, posts, Map, PostType.MARKET, cur_position)
 	waiting_time=dict()
 	waiting_time[train["idx"]]=0
 	food_is_necessary=False
@@ -100,22 +104,23 @@ def calculate_priorities(Map_layer_first, Map, cur_position):
 	if product_loss+10 >= town["product"]:
 		return routes, waiting_time
 	tmp=routes.copy()
-	routes= calculate_routes(Map_layer_first, Map, PostType.STORAGE, cur_position)
+	routes= calculate_routes(trains, posts, Map, PostType.STORAGE, cur_position)
 	product_loss+=consumers*(routes[train["idx"]][0]*2+waiting_time[train["idx"]])
 	if product_loss+10 >= town["product"]:
 		return tmp, waiting_time
 	return routes, waiting_time
 	
-def calculate_routes(Map_layer_first, Map, target_type, cur_position):
-	towns, markets, storages=define_post_type(Map_layer_first)
+	
+	
+def calculate_routes(trains, posts, Map, target_type, cur_position):
+	towns, markets, storages=define_post_type(posts)
 	tmp=Map.graph.copy()
-	for i in Map_layer_first["posts"]:
+	for i in posts:
 		if i["type"]==PostType.TOWN:
 			town=i
-	trains=Map_layer_first["trains"]
 	routes=dict()
 	if target_type!=PostType.TOWN:
-		target=calculate_target(Map_layer_first, Map, target_type, cur_position)
+		target=calculate_target(trains, posts, Map, target_type, cur_position)
 		if target_type==PostType.STORAGE:
 			for i in markets:
 				tmp.remove_node(i)
@@ -129,14 +134,14 @@ def calculate_routes(Map_layer_first, Map, target_type, cur_position):
 		routes[i["idx"]][1]=routes[i["idx"]][1][1:]
 	return routes
 	
-def calculate_target(Map_layer_first, Map, target_type, cur_position):
-	trains=Map_layer_first["trains"]
-	posts=Map_layer_first["posts"]
+	
+	
+def calculate_target(trains, posts, Map, target_type, cur_position):
 	targets_by_indexes=dict()
 	for i in posts:
 		if i["type"]==target_type:
 			targets_by_indexes[i["point_idx"]]=i
-	posts=define_post_type(Map_layer_first)
+	posts=define_post_type(posts)
 	prev_profitness=0
 	profitness=0
 	for i in trains:
@@ -157,86 +162,62 @@ def calculate_target(Map_layer_first, Map, target_type, cur_position):
 	return target
 
 	
-def test(Map_layer_first, Map):
-	towns, markets, storages=define_post_type(Map_layer_first)
-	market_routes=dict()
-	storage_routes=dict()
 	
-	
-	
-# trains-json_Map["trains"], Map-граф, содержащий карту
-# targetPoint-точка назначения, trainIdx-индекс выбранного поезда
-def moveTrains(trains, Map, targetPoint, trainIdx):
-	targetPoint = int(targetPoint)
-	speed=0
-	trainIdx = int(trainIdx)
-	train = [i for i in trains if trainIdx == i["idx"]][0]
-	lineIdx = train["line_idx"]
-	if train["position"] == 0:
-		currentPoint = Map.lines[train["line_idx"]][0]
-	else:
-		currentPoint = Map.lines[train["line_idx"]][1]
-	if targetPoint in Map.lines[train["line_idx"]]:
-		if targetPoint == Map.lines[train["line_idx"]][0]:
+def move_trains(train, Map, target_point, train_idx, cur_position):
+	target_point = int(target_point)
+	train_idx = int(train_idx)
+	line_idx = train["line_idx"]
+	if target_point in Map.lines[train["line_idx"]]:
+		if target_point == Map.lines[train["line_idx"]][0]:
 			speed = -1
 		else:
 			speed = 1
 	else:
 		for i in Map.lines.items():
-			if i[1] == [currentPoint, targetPoint]:
+			if i[1] == [cur_position, target_point]:
 				speed = 1
-				lineIdx = i[0]
+				line_idx = i[0]
 				break
-			elif i[1] == [targetPoint, currentPoint]:
+			elif i[1] == [target_point, cur_position]:
 				speed = -1
-				lineIdx = i[0]
+				line_idx = i[0]
 				break
-	return lineIdx, speed, train["idx"]
-
-
-# json_data-нулевой слой карты, функция преобразует карту из формата json в граф, возвращает полученный граф
-
-
-
-# trains-json_Map["trains"], Map-граф, содержащий карту
-# возвращает граф, содержащий поезда и список кнопок для каждого поезда
-def parseTrains(trains, Map):
+	return line_idx, speed, train["idx"]
+	
+	
+	
+def parse_trains(trains, Map):
 	graph = nx.Graph()
-	#lines = {v: k for k, v in nx.get_edge_attributes(Map, "idx").items()}
-	#length = nx.get_edge_attributes(Map, "weight")
 	if trains:
-		vec = [Map.pos[Map.lines[i["line_idx"]][1]] - Map.pos[Map.lines[i["line_idx"]][0]] for i in trains]
+		vec = [Map.pos[Map.lines[i["line_idx"]][1]] 
+				- Map.pos[Map.lines[i["line_idx"]][0]] for i in trains]
 		for i in trains:
-			trainPos = {
+			train_pos = {
 				i["idx"]: [Map.pos[Map.lines[i["line_idx"]][0]] + vec[0] 
 				/ Map.lines_length[i["line_idx"]]
 				* i["position"]]}
 		for i in trains:
-			trainPos[i["idx"]] = list(trainPos[i["idx"]][0])
+			train_pos[i["idx"]] = list(train_pos[i["idx"]][0])
 		for i in trains:
-			graph.add_node(i["idx"], pos=trainPos[i["idx"]])
+			graph.add_node(i["idx"], pos=train_pos[i["idx"]])
 		return graph
 	else:
 		return 0
 
 
-# trains-граф, возвращаемый parseTrains, отрисовывает поезда
-def drawTrains(trains):
+		
+def draw_trains(trains):
 	NODESIZE = 100
 	pos = nx.get_node_attributes(trains, "pos")
 	nx.draw(trains, pos, node_color="blue", node_size=NODESIZE)
 
 
-# Map-граф, возвращаемый parseMap, отрисовывает карту
-
-
-
-#первый слой Map json
-def define_post_type(Map_layer_first):
+	
+def define_post_type(posts):
 	town_idx = []
 	market_idx = []
 	storage_idx = []
-	for i in Map_layer_first["posts"]:
+	for i in posts:
 		if i["type"] == PostType.TOWN:
 			town_idx.append(i["point_idx"])
 		elif i["type"] == PostType.MARKET:
