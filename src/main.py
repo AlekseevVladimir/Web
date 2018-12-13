@@ -19,17 +19,27 @@ def createFigures(graph, graph_idx):
 	
 	
 def main():
-	graph, graph_idx=parse(json.load(open('test_graphs/small_graph.json')))
-	createFigures(graph, graph_idx)
-	graph, graph_idx=parse(json.load(open('test_graphs/big_graph.json')))
-	createFigures(graph, graph_idx)
-	graph, graph_idx=parse(json.load(open('test_graphs/custom_graph.json')))
-	createFigures(graph, graph_idx)
-	graph, graph_idx=parse(json.load(open('test_graphs/custom_graph2.json')))
-	createFigures(graph, graph_idx)
-	graph, graph_idx=parse(json.load(open('test_graphs/custom_graph3.json')))
-	createFigures(graph, graph_idx)
-	plt.show()
+	while True:
+		print("choose graph:\n1:small graph\n2:big graph\n3:custom graph\n4:custom graph 2\n5:custom graph 3\n0 to exit")
+		choice=int(input())
+		if choice==1:
+			graph, graph_idx=parse(json.load(open('test_graphs/small_graph.json')))
+			createFigures(graph, graph_idx)
+		elif choice==2:
+			graph, graph_idx=parse(json.load(open('test_graphs/big_graph.json')))
+			createFigures(graph, graph_idx)
+		elif choice==3:
+			graph, graph_idx=parse(json.load(open('test_graphs/custom_graph.json')))
+			createFigures(graph, graph_idx)
+		elif choice==4:
+			graph, graph_idx=parse(json.load(open('test_graphs/custom_graph2.json')))
+			createFigures(graph, graph_idx)
+		elif choice==5:
+			graph, graph_idx=parse(json.load(open('test_graphs/custom_graph3.json')))
+			createFigures(graph, graph_idx)
+		elif choice==0:
+			break
+		plt.show()
 
 
 if __name__ == '__main__':
