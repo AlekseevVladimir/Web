@@ -59,7 +59,7 @@ class Socket():
 			print("Unknown command")
 
 	def action(self, tmp, string):
-		TIMEOUT = 10
+		TIMEOUT = 4
 		DATAPACK = 4
 		bytes = tmp.to_bytes(DATAPACK, byteorder='little') + len(string).to_bytes(DATAPACK,
 																				  byteorder='little') + string.encode()

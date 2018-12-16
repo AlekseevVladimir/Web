@@ -11,6 +11,7 @@ LOADPERTURN=8
 class WorldMap(object):
 	def __init__(self, map_layer_zero, map_layer_one):
 		self.lines=dict()
+		self.lines_connected_to_points=dict()
 		self.lines_length=dict()
 		self.parse_map(map_layer_zero, map_layer_one)
 		
@@ -22,6 +23,16 @@ class WorldMap(object):
 										i['points'][1], i['length']) 
 										for i in map_layer_zero['lines']])
 		for i in map_layer_zero["lines"]:
+			if i["points"][0] in self.lines_connected_to_points.keys():
+				self.lines_connected_to_points[i["points"][0]].append(i["idx"])
+			else:
+				self.lines_connected_to_points[i["points"][0]]=list()
+				self.lines_connected_to_points[i["points"][0]].append(i["idx"])
+			if i["points"][1] in self.lines_connected_to_points.keys():
+				self.lines_connected_to_points[i["points"][1]].append(i["idx"])
+			else:
+				self.lines_connected_to_points[i["points"][1]]=list()
+				self.lines_connected_to_points[i["points"][1]].append(i["idx"])
 			self.lines[i["idx"]]=i["points"]
 			self.lines_length[i["idx"]]=i["length"]
 		pos = nx.spring_layout(self.graph)
@@ -67,10 +78,26 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 			cur_position[i["idx"]]=-1
 	line_idx=dict()
 	speed=dict()
+	trains_on_line=dict()
+	for train in trains:
+		if not (train["line_idx"] in trains_on_line.keys()):
+			trains_on_line[train["line_idx"]]=list()
+			
+		trains_on_line[train["line_idx"]].append(train)
+			
 	if not routes:
 		routes=dict()
-	#print("CUR_POS")
-	#print(cur_position)
+		
+	for train in my_trains:
+		if train["speed"]==0 and train["position"]==Map.lines_length[train["line_idx"]]-1:
+			speed[train["idx"]]=1
+			line_idx[train["idx"]]=train["line_idx"]
+		elif train["speed"]==0 and train["position"]==1:
+			speed[train["idx"]]=-1
+			line_idx[train["idx"]]=train["line_idx"]
+			
+	
+		
 	for train in my_trains:
 		if train["idx"] in routes:
 			if routes[train["idx"]][1][0]==cur_position[train["idx"]]:
@@ -81,20 +108,38 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 		
 	
 	for train in my_trains:
-		if not (train["idx"] in routes.keys()):
-			print("ASD")
+		if not (train["idx"] in routes.keys()) or cur_position[train["idx"]]!=-1:
+			#print("ASD")
 			routes, waiting_time=calculate_priorities(train, trains, posts, 
 														Map, cur_position[train["idx"]], 
 														routes, line_idx, town)
 		
-		if train["idx"]in routes.keys():
-			line_idx[train["idx"]], speed[train["idx"]]=move_trains(train, 
+			if train["idx"]in routes.keys() and not (train["idx"] in speed.keys()):
+				line_idx[train["idx"]], speed[train["idx"]]=move_trains(train, 
 																	Map, routes[train["idx"]][1][0], 
 																train["idx"], cur_position[train["idx"]])
-	print(routes)
+		#print(train["speed"])
+		#print(train["position"])
+		#print(Map.lines_length[train["line_idx"]])
+		#if train["line_idx"] in trains_on_line.keys():
+		#	speed[train["idx"]]=trains_on_line[train["line_idx"]]
+		
+	for train in my_trains:
+		if (train["speed"]==1 and train["position"]==Map.lines_length[train["line_idx"]]-1) or (train["speed"]==-1 and train["position"]==1):
+			for i in Map.lines_connected_to_points[routes[train["idx"]][1][0]]:
+				if i in trains_on_line.keys():
+					for j in trains_on_line[i]:
+						if j!=train:
+							if j["speed"]==1 and j["position"]==Map.lines_length[j["line_idx"]]-1 or j["speed"]==-1 and j["position"]==1:
+								#print("TORMOZ")
+								if not (j["idx"] in speed.keys()):
+									speed[train["idx"]]=0
+									line_idx[train["idx"]]=train["line_idx"]
+									#print(train["idx"])
+	#print(routes)
+	train=trains[0]
+	#print(speed)
 	return line_idx, speed, routes
-		
-		
 		
 		
 		
@@ -129,21 +174,27 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 		#		if routes[train["idx"]][1]:
 		#			line_idx[train["idx"]], speed[train["idx"]], train_idx[train["idx"]]=move_trains(train, Map, routes[train["idx"]][1][0], 
 		#										train["idx"], cur_position[train["idx"]])	
-	return line_idx, speed, train_idx, routes, waiting_time
+	
 
 	
 	
 def calculate_priorities(train, trains, posts, Map, cur_position, routes, line_idx, town):
 	#train=trains[0]
 	
-	if cur_position != town["point_idx"]:
+	if cur_position != town["point_idx"] and (not (train["idx"] in routes.keys()) or train["goods"]==train["goods_capacity"]):
 		#print(town)
+		#print(train)
 		buf=calculate_routes(train, trains, posts, Map, PostType.TOWN, cur_position, line_idx, town)
 		if buf:
 			routes[train["idx"]]=buf
 		return routes, 0
+	elif train["goods_type"]==3:
+		buf= calculate_routes(train, trains, posts, Map, PostType.STORAGE, cur_position, line_idx, town)
+		if buf:
+			routes[train["idx"]]=buf
+		return routes, 0
 	
-	buf= calculate_routes(train, trains, posts, Map, PostType.MARKET, cur_position, line_idx)
+	buf= calculate_routes(train, trains, posts, Map, PostType.MARKET, cur_position, line_idx, town)
 	if buf:
 		routes[train["idx"]]=buf
 	else:
@@ -151,20 +202,20 @@ def calculate_priorities(train, trains, posts, Map, cur_position, routes, line_i
 	#print(routes)
 	waiting_time=dict()
 	waiting_time[train["idx"]]=0
-	food_is_necessary=False
 	consumers=town["population"]
 	if town["events"]:
 		if town["events"][0]["type"]==3:
 			consumers+=town["events"]["parasites_power"]
 	waiting_time[train["idx"]]=0
 	if routes[train["idx"]]:
-		product_loss=consumers*(routes[train["idx"]][0]*2+waiting_time[train["idx"]])
+		product_loss=consumers*((routes[train["idx"]][0]+nx.shortest_path_length(Map.graph, source=cur_position,
+		target=town["point_idx"]))+waiting_time[train["idx"]]+15)
 	
 		if product_loss >= town["product"]:
 			return routes, waiting_time
 	tmp=routes.copy()
 	#print(routes)
-	buf= calculate_routes(train, trains, posts, Map, PostType.STORAGE, cur_position, line_idx)
+	buf= calculate_routes(train, trains, posts, Map, PostType.STORAGE, cur_position, line_idx, town)
 	if buf:
 		routes[train["idx"]]=buf
 	else:
@@ -192,11 +243,11 @@ def calculate_routes(train, trains, posts, Map, target_type, cur_position, line_
 		target=town["point_idx"]
 	#print(line_idx)
 	for i in trains:
-		if tuple(Map.lines[i["line_idx"]]) in tmp.edges() or tuple(Map.lines[i["line_idx"]][::-1]) in tmp.edges():
+		if (tuple(Map.lines[i["line_idx"]]) in tmp.edges() 
+		or tuple(Map.lines[i["line_idx"]][::-1]) in tmp.edges()) and cur_position!=town["point_idx"]:
 			tmp.remove_edge(Map.lines[i["line_idx"]][0], Map.lines[i["line_idx"]][1])
 		if i["idx"] in line_idx.keys():
 			if line_idx[i["idx"]]:
-				#print(Map.lines[line_idx[i["idx"]]])
 				if tuple(Map.lines[line_idx[i["idx"]]]) in tmp.edges() or tuple(Map.lines[line_idx[i["idx"]]][::-1]) in tmp.edges():
 					tmp.remove_edge(Map.lines[line_idx[i["idx"]]][0], Map.lines[line_idx[i["idx"]]][1])
 	if nx.has_path(tmp, cur_position, target):

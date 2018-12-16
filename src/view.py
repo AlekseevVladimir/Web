@@ -76,7 +76,7 @@ class PrettyWidget(QWidget):
 	def update_map(self):
 		self.figure.clf()
 		response_one, map_layer_one = self.server_interaction.getmap(MapLayer.FIRST_LAYER.value)
-		#print(response_one)
+		#print(map_layer_one)
 		if not self.initialised:
 			response_zero, map_layer_zero = self.server_interaction.getmap(MapLayer.ZERO_LAYER.value)
 			if not response_zero and not response_one:
