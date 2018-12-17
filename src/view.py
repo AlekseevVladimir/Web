@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from dataprocessor import WorldMap, define_post_type, check_trains, parse_trains, draw_trains
+from dataprocessor import WorldMap, define_post_type, check_trains, parse_trains, draw_trains, check_upgrades
 from serverinteraction import Socket
 from time import time as timer
 from enum import Enum
@@ -76,7 +76,6 @@ class PrettyWidget(QWidget):
 	def update_map(self):
 		self.figure.clf()
 		response_one, map_layer_one = self.server_interaction.getmap(MapLayer.FIRST_LAYER.value)
-		#print(map_layer_one)
 		if not self.initialised:
 			response_zero, map_layer_zero = self.server_interaction.getmap(MapLayer.ZERO_LAYER.value)
 			if not response_zero and not response_one:
@@ -85,18 +84,16 @@ class PrettyWidget(QWidget):
 		self.WorldMap.draw_map()
 		
 		response, self.this_player=self.server_interaction.player()
-		print(self.this_player["town"])
-	
 		line_idx, speed, self.routes=check_trains(
 					map_layer_one, self.routes, self.WorldMap, self.waiting_time, self.this_player)
 					
-		
+		posts, trains=check_upgrades(self.this_player, self.WorldMap)
+		self.server_interaction.upgrade(posts, trains)
 		for train in self.this_player["trains"]:
 			if train["idx"] in line_idx.keys():
 				self.server_interaction.move(line_idx[train["idx"]], speed[train["idx"]], train["idx"])
 		self.TICK+=1
-		if not response_one:
-			#print(self.TICK)
+		for train in self.this_player["trains"]:
 			trains = parse_trains(map_layer_one["trains"], self.WorldMap)
 			if trains: 
 				draw_trains(trains)

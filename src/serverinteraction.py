@@ -120,11 +120,11 @@ class Socket():
 		if posts==0:
 			posts=[]
 		else:
-			posts = [posts]
+			posts = posts
 		if trains==0:
 			trains=[]
 		else:
-			trains = [trains]
+			trains = trains
 		string = json.dumps({"posts": posts, "trains": trains})
 		return self.action(Action.UPGRADE.value, string)
 
