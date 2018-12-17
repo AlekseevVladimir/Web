@@ -85,11 +85,25 @@ class PrettyWidget(QWidget):
 		self.WorldMap.draw_map()
 		
 		response, self.this_player=self.server_interaction.player()
-		#print(self.this_player["town"])
+		print(self.this_player["town"])
+		if self.this_player["town"]["population"]==0:
+			print("AAAAAAAAAAAAA")
+			print("AAAAAAAAAAAAA")
+			print("AAAAAAAAAAAAA")
+			print("AAAAAAAAAAAAA")
+			print("AAAAAAAAAAAAA")
+			print("AAAAAAAAAAAAA")
+			print("AAAAAAAAAAAAA")
+			print("AAAAAAAAAAAAA")
 		line_idx, speed, self.routes=check_trains(
 					map_layer_one, self.routes, self.WorldMap, self.waiting_time, self.this_player)
 					
-		
+		#if map_layer_one["trains"][0]["level"]==1 and self.this_player["town"]["armor"]>=80:
+		#	print("UPGRADE")
+		#	print("UPGRADE")
+		#	print("UPGRADE")
+		#	print("UPGRADE")
+		#	self.server_interaction.upgrade(0, 1)
 		#print(self.this_player["town"])
 		for train in self.this_player["trains"]:
 			if train["idx"] in line_idx.keys():

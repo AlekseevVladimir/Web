@@ -7,7 +7,7 @@ class PostType(object):
     STORAGE = 3
 
 LOADPERTURN=8
-#!!!!! баг в draw trains
+#!!!!! приказы отданные на этот ход не учитываеются в calculate_routes
 class WorldMap(object):
 	def __init__(self, map_layer_zero, map_layer_one):
 		self.lines=dict()
@@ -36,7 +36,7 @@ class WorldMap(object):
 			self.lines[i["idx"]]=i["points"]
 			self.lines_length[i["idx"]]=i["length"]
 		pos = nx.spring_layout(self.graph)
-		self.pos = nx.kamada_kawai_layout(self.graph, pos=pos)
+		self.pos = nx.kamada_kawai_layout(self.graph, pos=pos, weight=None)
 		town, market, storage = define_post_type(map_layer_one["posts"])
 		points_idx=list(self.pos.keys())
 		self.color_Map=list()
@@ -88,13 +88,6 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 	if not routes:
 		routes=dict()
 		
-	for train in my_trains:
-		if train["speed"]==0 and train["position"]==Map.lines_length[train["line_idx"]]-1:
-			speed[train["idx"]]=1
-			line_idx[train["idx"]]=train["line_idx"]
-		elif train["speed"]==0 and train["position"]==1:
-			speed[train["idx"]]=-1
-			line_idx[train["idx"]]=train["line_idx"]
 			
 	
 		
@@ -112,7 +105,7 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 			#print("ASD")
 			routes, waiting_time=calculate_priorities(train, trains, posts, 
 														Map, cur_position[train["idx"]], 
-														routes, line_idx, town)
+														routes, line_idx, town, trains_on_line)
 		
 			if train["idx"]in routes.keys() and not (train["idx"] in speed.keys()):
 				line_idx[train["idx"]], speed[train["idx"]]=move_trains(train, 
@@ -123,19 +116,76 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 		#print(Map.lines_length[train["line_idx"]])
 		#if train["line_idx"] in trains_on_line.keys():
 		#	speed[train["idx"]]=trains_on_line[train["line_idx"]]
-		
-	for train in my_trains:
-		if (train["speed"]==1 and train["position"]==Map.lines_length[train["line_idx"]]-1) or (train["speed"]==-1 and train["position"]==1):
+	#print(trains[2])	
+	for train in my_trains: 
+		if (train["position"]==(Map.lines_length[train["line_idx"]]-1) or
+						(train["position"]==1)):
+			flag=False
 			for i in Map.lines_connected_to_points[routes[train["idx"]][1][0]]:
-				if i in trains_on_line.keys():
+				if i in trains_on_line.keys() and i!=train["line_idx"]:
+					#print("TEST1")
 					for j in trains_on_line[i]:
-						if j!=train:
-							if j["speed"]==1 and j["position"]==Map.lines_length[j["line_idx"]]-1 or j["speed"]==-1 and j["position"]==1:
-								#print("TORMOZ")
-								if not (j["idx"] in speed.keys()):
-									speed[train["idx"]]=0
-									line_idx[train["idx"]]=train["line_idx"]
-									#print(train["idx"])
+						if (j["speed"]==1 and j["position"]==Map.lines_length[j["line_idx"]]-1
+											and Map.lines[j["line_idx"]][1]==routes[train["idx"]][1][0]
+													or j["speed"]==-1 and j["position"]==1
+													and Map.lines[j["line_idx"]][0]==routes[train["idx"]][1][0]):
+							#print("TEST2")
+							if not (j["idx"] in speed.keys()):
+								#print("TEST3")
+								flag=True								
+								speed[train["idx"]]=0
+								line_idx[train["idx"]]=train["line_idx"]
+			if flag==False and train["speed"]==0:
+				if train["position"]==1:
+					speed[train["idx"]]=-1
+					line_idx[train["idx"]]=train["line_idx"]
+				elif train["position"]==(Map.lines_length[train["line_idx"]]-1):
+					speed[train["idx"]]=1
+					line_idx[train["idx"]]=train["line_idx"]
+	#print(speed)
+	#for i in trains:
+	#	print(i)
+	for train in my_trains:
+		if train["line_idx"] in trains_on_line.keys() and cur_position[train["idx"]]==-1:
+			for i in trains_on_line[train["line_idx"]]:
+				if not (train["idx"] in speed.keys()):
+					speed[train["idx"]]=train["speed"]
+				if not (i["idx"] in speed.keys()):
+					speed[i["idx"]]=i["speed"]
+				if (i["position"]==(train["position"] + speed[train["idx"]] and cur_position[i["idx"]]==-1) and
+											speed[train["idx"]]!=speed[i["idx"]] and i["idx"]!=train["idx"]and cur_position[i["idx"]]==-1):
+					speed[train["idx"]]=speed[i["idx"]]
+					line_idx[train["idx"]]=train["line_idx"]
+				elif speed[train["idx"]]==0 and train["speed"]==0:
+					if i["position"]==train["position"]+1 and speed[i["idx"]]!=0 and cur_position[i["idx"]]==-1:
+						speed[train["idx"]]=speed[i["idx"]]
+						line_idx[train["idx"]]=train["line_idx"]
+					elif i["position"]==train["position"]-1 and speed[i["idx"]]!=0 and cur_position[i["idx"]]==-1:
+						speed[train["idx"]]=speed[i["idx"]]
+						line_idx[train["idx"]]=train["line_idx"]
+	#print(speed)
+	#for i in trains:
+	#	print(i)
+	#print(routes)
+	#print(line_idx)
+	#print(cur_position)
+	#print(routes)
+					
+						
+							
+							
+	#for train in my_trains:
+	#	if (train["speed"]==1 and train["position"]==Map.lines_length[train["line_idx"]]-1) or (train["speed"]==-1 and train["position"]==1):
+	#		for i in Map.lines_connected_to_points[routes[train["idx"]][1][0]]:
+	#			if i in trains_on_line.keys():
+	#				for j in trains_on_line[i]:
+	#					if j!=train:
+	#						if j["speed"]==1 and j["position"]==Map.lines_length[j["line_idx"]]-1 or j["speed"]==-1 and j["position"]==1:
+	#							#print("TORMOZ")
+	#							if not (j["idx"] in speed.keys()):
+	#								speed[train["idx"]]=0
+	#								line_idx[train["idx"]]=train["line_idx"]
+	#								#print(train["idx"])
 	#print(routes)
 	train=trains[0]
 	#print(speed)
@@ -178,23 +228,23 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 
 	
 	
-def calculate_priorities(train, trains, posts, Map, cur_position, routes, line_idx, town):
+def calculate_priorities(train, trains, posts, Map, cur_position, routes, line_idx, town, trains_on_line):
 	#train=trains[0]
 	
 	if cur_position != town["point_idx"] and (not (train["idx"] in routes.keys()) or train["goods"]==train["goods_capacity"]):
 		#print(town)
 		#print(train)
-		buf=calculate_routes(train, trains, posts, Map, PostType.TOWN, cur_position, line_idx, town)
+		buf=calculate_routes(train, trains, posts, Map, PostType.TOWN, cur_position, line_idx, town, trains_on_line)
 		if buf:
 			routes[train["idx"]]=buf
 		return routes, 0
 	elif train["goods_type"]==3:
-		buf= calculate_routes(train, trains, posts, Map, PostType.STORAGE, cur_position, line_idx, town)
+		buf= calculate_routes(train, trains, posts, Map, PostType.STORAGE, cur_position, line_idx, town, trains_on_line)
 		if buf:
 			routes[train["idx"]]=buf
 		return routes, 0
 	
-	buf= calculate_routes(train, trains, posts, Map, PostType.MARKET, cur_position, line_idx, town)
+	buf= calculate_routes(train, trains, posts, Map, PostType.MARKET, cur_position, line_idx, town, trains_on_line)
 	if buf:
 		routes[train["idx"]]=buf
 	else:
@@ -215,7 +265,7 @@ def calculate_priorities(train, trains, posts, Map, cur_position, routes, line_i
 			return routes, waiting_time
 	tmp=routes.copy()
 	#print(routes)
-	buf= calculate_routes(train, trains, posts, Map, PostType.STORAGE, cur_position, line_idx, town)
+	buf= calculate_routes(train, trains, posts, Map, PostType.STORAGE, cur_position, line_idx, town, trains_on_line)
 	if buf:
 		routes[train["idx"]]=buf
 	else:
@@ -228,11 +278,35 @@ def calculate_priorities(train, trains, posts, Map, cur_position, routes, line_i
 	
 	
 	
-def calculate_routes(train, trains, posts, Map, target_type, cur_position, line_idx, town=0):
+def calculate_routes(train, trains, posts, Map, target_type, cur_position, line_idx, town, trains_on_line):
 	towns, markets, storages=define_post_type(posts)
 	tmp=Map.graph.copy()
+	
+	#print(line_idx)
+	for i in line_idx.values():
+		if tuple(Map.lines[i]) in tmp.edges() or tuple(Map.lines[i][::-1]) in tmp.edges():
+			tmp.remove_edge(Map.lines[i][0], Map.lines[i][1])
+	
+	for i in Map.lines_connected_to_points[cur_position]:
+		if i in trains_on_line.keys():
+			for j in trains_on_line[i]:
+				if (cur_position==Map.lines[i][0] and j["speed"]!=1 
+				or cur_position==Map.lines[i][1] and j["speed"]!=-1):
+					if tuple(Map.lines[i]) in tmp.edges():
+						tmp.remove_edge(Map.lines[i][0], Map.lines[i][1])
+					elif tuple(Map.lines[i][-1:0]) in tmp.edges():
+						tmp.remove_edge(Map.lines[i][1], Map.lines[i][0])
+	
+	#for i in trains:
+	#	if (tuple(Map.lines[i["line_idx"]]) in tmp.edges() 
+	#	or tuple(Map.lines[i["line_idx"]][::-1]) in tmp.edges()) and cur_position!=town["point_idx"]:
+	#		tmp.remove_edge(Map.lines[i["line_idx"]][0], Map.lines[i["line_idx"]][1])
+	#	if i["idx"] in line_idx.keys():
+	#		if line_idx[i["idx"]]:
+	#			if tuple(Map.lines[line_idx[i["idx"]]]) in tmp.edges() or tuple(Map.lines[line_idx[i["idx"]]][::-1]) in tmp.edges():
+	#				tmp.remove_edge(Map.lines[line_idx[i["idx"]]][0], Map.lines[line_idx[i["idx"]]][1])
 	if target_type!=PostType.TOWN:
-		target=calculate_target(train, trains, posts, Map, target_type, cur_position)
+		target=calculate_target(train, trains, posts, tmp, target_type, cur_position)
 		if target_type==PostType.STORAGE:
 			for i in markets:
 				tmp.remove_node(i)
@@ -241,15 +315,8 @@ def calculate_routes(train, trains, posts, Map, target_type, cur_position, line_
 				tmp.remove_node(i)
 	else:
 		target=town["point_idx"]
-	#print(line_idx)
-	for i in trains:
-		if (tuple(Map.lines[i["line_idx"]]) in tmp.edges() 
-		or tuple(Map.lines[i["line_idx"]][::-1]) in tmp.edges()) and cur_position!=town["point_idx"]:
-			tmp.remove_edge(Map.lines[i["line_idx"]][0], Map.lines[i["line_idx"]][1])
-		if i["idx"] in line_idx.keys():
-			if line_idx[i["idx"]]:
-				if tuple(Map.lines[line_idx[i["idx"]]]) in tmp.edges() or tuple(Map.lines[line_idx[i["idx"]]][::-1]) in tmp.edges():
-					tmp.remove_edge(Map.lines[line_idx[i["idx"]]][0], Map.lines[line_idx[i["idx"]]][1])
+	if target==-1:
+		return 0
 	if nx.has_path(tmp, cur_position, target):
 		routes=list(nx.single_source_dijkstra(tmp, cur_position, target=target))
 	else:
@@ -262,7 +329,7 @@ def calculate_routes(train, trains, posts, Map, target_type, cur_position, line_
 	
 	
 	
-def calculate_target(train, trains, posts, Map, target_type, cur_position):
+def calculate_target(train, trains, posts, graph, target_type, cur_position):
 	targets_by_indexes=dict()
 	for i in posts:
 		if i["type"]==target_type:
@@ -270,12 +337,17 @@ def calculate_target(train, trains, posts, Map, target_type, cur_position):
 	posts=define_post_type(posts)
 	prev_profitness=0
 	profitness=0
+	tmp=-1
+	target=-1
 	for j in posts[target_type-1]:
 		if target_type==PostType.MARKET:
 			goods_amount=targets_by_indexes[j]["product"]
 		else:
 			goods_amount=targets_by_indexes[j]["armor"]
-		tmp=nx.single_source_dijkstra(Map.graph, cur_position, target=j)
+		if nx.has_path(graph, cur_position, j):
+			tmp=nx.single_source_dijkstra(graph, cur_position, target=j)
+		else:
+			continue
 		if tmp[0]:
 			goods_amount = goods_amount + targets_by_indexes[j]["replenishment"] * tmp[0]
 			if goods_amount>train["goods_capacity"]:

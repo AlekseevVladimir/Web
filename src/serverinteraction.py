@@ -117,8 +117,14 @@ class Socket():
 		return self.action(Action.MOVE.value, string)
 
 	def upgrade(self, posts, trains):
-		posts = [posts]
-		trains = [trains]
+		if posts==0:
+			posts=[]
+		else:
+			posts = [posts]
+		if trains==0:
+			trains=[]
+		else:
+			trains = [trains]
 		string = json.dumps({"posts": posts, "trains": trains})
 		return self.action(Action.UPGRADE.value, string)
 
