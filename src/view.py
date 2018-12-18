@@ -9,7 +9,7 @@ from serverinteraction import Socket
 from time import time as timer
 from enum import Enum
 TICK=0
-TIMEOUT = 2
+TIMEOUT = 1
 
 
 class MapLayer(Enum):
@@ -31,6 +31,7 @@ class PrettyWidget(QWidget):
 		self.trains = None
 		self.isSignIn = False
 		self.waiting_time=0
+		self.prev_map=0
 		#self.train_buttons = None
 		self.initUI()
 
@@ -81,30 +82,45 @@ class PrettyWidget(QWidget):
 			if not response_zero and not response_one:
 				self.WorldMap = WorldMap(map_layer_zero, map_layer_one)
 				self.initialised=True
-		self.WorldMap.draw_map()
-		
 		response, self.this_player=self.server_interaction.player()
-		line_idx, speed, self.routes=check_trains(
-					map_layer_one, self.routes, self.WorldMap, self.waiting_time, self.this_player)
-					
-		posts, trains=check_upgrades(self.this_player, self.WorldMap)
-		self.server_interaction.upgrade(posts, trains)
-		for train in self.this_player["trains"]:
-			if train["idx"] in line_idx.keys():
-				self.server_interaction.move(line_idx[train["idx"]], speed[train["idx"]], train["idx"])
-		self.TICK+=1
-		if self.this_player["town"]["population"]==0:
-			print("ASDASDASD")
-			print("ASDASDASD")
-			print("ASDASDASD")
-			print("ASDASDASD")
-			print("ASDASDASD")
-		for train in self.this_player["trains"]:
-			trains = parse_trains(map_layer_one["trains"], self.WorldMap)
-			if trains: 
-				draw_trains(trains)
+		self.WorldMap.draw_map()
+		diversity_flag=False
+		if self.prev_map:
+			diversity_flag=(self.prev_map["town"]==self.this_player.copy()["town"])
+		if not diversity_flag:
+			line_idx, speed, self.routes=check_trains(
+						map_layer_one, self.routes, self.WorldMap, self.waiting_time, self.this_player)
+						
+			posts, trains=check_upgrades(self.this_player, self.WorldMap)
+			self.server_interaction.upgrade(posts, trains)
+			for train in self.this_player["trains"]:
+				if train["idx"] in line_idx.keys():
+					self.server_interaction.move(line_idx[train["idx"]], speed[train["idx"]], train["idx"])
+			self.TICK+=1
+			#print(self.this_player["town"])
+			if self.this_player["town"]["population"]==0:
+				print("ASDASDASD")
+				print("ASDASDASD")
+				print("ASDASDASD")
+				print("ASDASDASD")
+				print("ASDASDASD")
+
+				
+			self.server_interaction.next_turn()
+		else:
+			print("TESTED555555")
+		trains = parse_trains(map_layer_one["trains"], self.WorldMap)
+		if trains: 
+			draw_trains(trains)
+		#if self.prev_map:
+		#	print(self.prev_map["town"])
+		#	print(self.this_player.copy()["town"])
+		#	print(self.prev_map["town"]==self.this_player.copy()["town"])
+		#print(self.prev_map==map_layer_one.copy())
+		self.prev_map=self.this_player.copy()
+		
 		self.canvas.draw()
-		self.server_interaction.next_turn()
+		
 
 	def menu(self):
 		self.vertical_group_box.setParent(None)
@@ -151,7 +167,7 @@ if __name__ == '__main__':
 		if int(timer() - counter) >= TIMEOUT and screen.isSignIn:
 			counter = timer()
 			screen.update_map()
-			print("-----------UPDATED------------")
+			#print("-----------UPDATED------------")
 	screen.show()
 	sys.exit(app.exec_())
 

@@ -6,7 +6,7 @@ class PostType(object):
     MARKET = 2
     STORAGE = 3
 
-LOADPERTURN=8
+LOADPERTURN=1
 
 class WorldMap(object):
 	def __init__(self, map_layer_zero, map_layer_one):
@@ -76,15 +76,16 @@ def check_upgrades(this_player, Map):
 		else:
 			cur_position[i["idx"]]=-1
 	posts_list=list()
+	if (res-30)>=town["next_level_price"]:
+		res-=town["next_level_price"]
+		posts_list.append(town["idx"])
 	for train in trains:
-		if train["next_level_price"]<=(res-40) and train["idx"]<=3 and train["level"]!=3 and train["level"]<=town["level"] and cur_position[train["idx"]]==town["point_idx"]:
+		if train["next_level_price"]<=(res-40) and train["idx"]<=3 and train["level"]!=3 and train["level"]<town["level"] and cur_position[train["idx"]]==town["point_idx"]:
 			res-=train["next_level_price"]
 			trains_list.append(train["idx"])
-	if (res-40)>=town["next_level_price"]:
-		res-=town["next_level_price"]
-		posts.append(town["idx"])
+	
 	for train in trains:
-		if train["next_level_price"]<=(res-40) and train["level"]!=3 and train["level"]<=town["level"] and cur_position[train["idx"]]==town["point_idx"]:
+		if train["next_level_price"]<=(res-40) and train["level"]!=3 and train["level"]<town["level"] and cur_position[train["idx"]]==town["point_idx"]:
 			res-=train["next_level_price"]
 			trains_list.append(train["idx"])
 	
@@ -117,8 +118,13 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 	if not routes:
 		routes=dict()
 		
-			
-	
+	counter=0
+	prod_trains=list()
+	for train in my_trains:
+		prod_trains.append(train["idx"])
+		if counter==5:
+			break
+		counter+=1
 		
 	for train in my_trains:
 		if train["idx"] in routes:
@@ -133,12 +139,21 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 		if not (train["idx"] in routes.keys()) or cur_position[train["idx"]]!=-1:
 			routes, waiting_time=calculate_priorities(train, trains, posts, 
 														Map, cur_position[train["idx"]], 
-														routes, line_idx, town, trains_on_line)
+														routes, line_idx, town, trains_on_line, prod_trains)
 		
 			if train["idx"]in routes.keys() and not (train["idx"] in speed.keys()):
 				line_idx[train["idx"]], speed[train["idx"]]=move_trains(train, 
 																	Map, routes[train["idx"]][1][0], 
 																train["idx"], cur_position[train["idx"]])
+	
+	for train in my_trains:
+		if train["idx"] in prod_trains:
+			if (train["line_idx"] in Map.lines_connected_to_points[town["point_idx"]]) and train["goods"]==train["goods_capacity"] and (train["goods"]+town["product"])>town["product_capacity"]:
+				print(train)
+				print("TESTED")
+				speed[train["idx"]]=0
+				line_idx[train["idx"]]=train["line_idx"]
+		
 	for train in my_trains: 
 		if (train["position"]==(Map.lines_length[train["line_idx"]]-1) or
 						(train["position"]==1)):
@@ -162,6 +177,7 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 					speed[train["idx"]]=1
 					line_idx[train["idx"]]=train["line_idx"]
 	
+	
 	for train in my_trains:
 		if train["line_idx"] in trains_on_line.keys() and cur_position[train["idx"]]==-1:
 			
@@ -171,8 +187,8 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 				if not (i["idx"] in speed.keys()):
 					speed[i["idx"]]=i["speed"]
 						
-				if (i["position"]==train["position"] + speed[train["idx"]] and cur_position[i["idx"]]==-1 and
-											speed[train["idx"]]!=speed[i["idx"]] and i["idx"]!=train["idx"] and cur_position[i["idx"]]==-1):
+				if (i["position"]==train["position"] + speed[train["idx"]] and
+											speed[train["idx"]]!=speed[i["idx"]] and i["idx"]!=train["idx"]):
 					speed[train["idx"]]=speed[i["idx"]]
 					line_idx[train["idx"]]=train["line_idx"]
 				elif speed[train["idx"]]==0 and train["speed"]==0:
@@ -184,8 +200,10 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 						
 						speed[train["idx"]]=speed[i["idx"]]
 						line_idx[train["idx"]]=train["line_idx"]
-						
-	
+		
+	print(routes)
+	print(line_idx)
+	print(speed)
 	return line_idx, speed, routes
 		
 		
@@ -194,7 +212,7 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 
 	
 	
-def calculate_priorities(train, trains, posts, Map, cur_position, routes, line_idx, town, trains_on_line):
+def calculate_priorities(train, trains, posts, Map, cur_position, routes, line_idx, town, trains_on_line, prod_trains):
 	
 	if cur_position != town["point_idx"] and (not (train["idx"] in routes.keys()) 
 									or train["goods"]==train["goods_capacity"]):
@@ -215,7 +233,7 @@ def calculate_priorities(train, trains, posts, Map, cur_position, routes, line_i
 						cur_position, line_idx, town, trains_on_line)
 	if buf:
 		routes[train["idx"]]=buf
-		if train["idx"]<=4:
+		if train["idx"] in prod_trains:
 			return routes, 0
 	else:
 		return routes, 0

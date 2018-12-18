@@ -144,7 +144,7 @@ class Socket():
 		else:
 			trains = trains
 		string = json.dumps({"posts": posts, "trains": trains})
-		print(string)
+		#print(string)
 		return self.action(Action.UPGRADE.value, string)
 
 	def errorReport(self, code):
