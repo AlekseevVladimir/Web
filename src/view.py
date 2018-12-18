@@ -93,6 +93,12 @@ class PrettyWidget(QWidget):
 			if train["idx"] in line_idx.keys():
 				self.server_interaction.move(line_idx[train["idx"]], speed[train["idx"]], train["idx"])
 		self.TICK+=1
+		if self.this_player["town"]["population"]==0:
+			print("ASDASDASD")
+			print("ASDASDASD")
+			print("ASDASDASD")
+			print("ASDASDASD")
+			print("ASDASDASD")
 		for train in self.this_player["trains"]:
 			trains = parse_trains(map_layer_one["trains"], self.WorldMap)
 			if trains: 
@@ -106,12 +112,17 @@ class PrettyWidget(QWidget):
 		self.button_layout.addWidget(self.vertical_group_box)
 
 	def sign_in(self):
-		data, is_ok = QInputDialog.getText(self, "Sign in", "Input name")
+		print(self.server_interaction.game())
+		name, is_ok = QInputDialog.getText(self, "Sign in", "Input name")
+		password, is_ok = QInputDialog.getText(self, "Sign in", "Input password")
+		game_name, is_ok1 = QInputDialog.getText(self, "Sign in", "Input game_name")
+		num_players, is_ok1 = QInputDialog.getText(self, "Sign in", "Input number of players")
+		num_turns, is_ok1 = QInputDialog.getText(self, "Sign in", "Input number of turns")
 		if is_ok:
 			if not self.server_interaction:
 				self.server_interaction = Socket()
 			self.menu()
-			self.server_interaction.login(str(data))
+			self.server_interaction.login(str(name), str(password), str(game_name), num_players, num_turns)
 			self.update_map()
 			self.isSignIn = True
 

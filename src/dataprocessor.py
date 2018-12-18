@@ -7,8 +7,6 @@ class PostType(object):
     STORAGE = 3
 
 LOADPERTURN=8
-#!!!!! приказы отданные на этот ход не учитываеются в calculate_routes
-#!!!!! сделать так, чтобы поезда въезжающие в город не сталкивались с выехжающими, возможно задавая скорость всей линии как скорость въезжающих, второй варинт 1 линию под въезд вторую под выезд
 
 class WorldMap(object):
 	def __init__(self, map_layer_zero, map_layer_one):
@@ -187,28 +185,7 @@ def check_trains(map_layer_one, routes, Map, waiting_time, this_player):
 						speed[train["idx"]]=speed[i["idx"]]
 						line_idx[train["idx"]]=train["line_idx"]
 						
-	print(Map.lines_connected_to_points[town["point_idx"]])
-	print(Map.lines[79])
-	print(Map.lines[88])
-	test_flag=False
-	if Map.lines_connected_to_points[town["point_idx"]][0] in trains_on_line.keys():
-		for train in trains_on_line[Map.lines_connected_to_points[town["point_idx"]][0]]:
-			if train["speed"]==-1:
-				test_flag=True
-	if test_flag:
-		if Map.lines_connected_to_points[town["point_idx"]][0] in trains_on_line.keys():
-			for train in trains_on_line[Map.lines_connected_to_points[town["point_idx"]][0]]:
-				speed[train["idx"]]=-1
-		
-	test_flag=False	
-	if Map.lines_connected_to_points[town["point_idx"]][1] in trains_on_line.keys():
-		for train in trains_on_line[Map.lines_connected_to_points[town["point_idx"]][1]]:
-			if train["speed"]==-1:
-				test_flag=True
-	if test_flag:
-		if Map.lines_connected_to_points[town["point_idx"]][1] in trains_on_line.keys():
-			for train in trains_on_line[Map.lines_connected_to_points[town["point_idx"]][1]]:
-				speed[train["idx"]]=-1
+	
 	return line_idx, speed, routes
 		
 		
@@ -276,6 +253,17 @@ def calculate_routes(train, trains, posts, Map, target_type, cur_position, line_
 	towns, markets, storages=define_post_type(posts)
 	tmp=Map.graph.copy()
 	
+	if cur_position==town["point_idx"]:
+		if town["point_idx"]==Map.lines[Map.lines_connected_to_points[town["point_idx"]][1]][0]:
+			second_point=Map.lines[Map.lines_connected_to_points[town["point_idx"]][1]][1]
+			
+			if (town["point_idx"], second_point) in tmp.edges():
+				tmp.remove_edge(town["point_idx"], second_point)
+		else:
+			second_point=Map.lines[Map.lines_connected_to_points[town["point_idx"]][1]][0]
+			if (second_point, town["point_idx"]) in tmp.edges():
+				tmp.remove_edge(second_point, town["point_idx"])
+	
 	for i in line_idx.values():
 		if tuple(Map.lines[i]) in tmp.edges() or tuple(Map.lines[i][::-1]) in tmp.edges():
 			tmp.remove_edge(Map.lines[i][0], Map.lines[i][1])
@@ -299,6 +287,15 @@ def calculate_routes(train, trains, posts, Map, target_type, cur_position, line_
 			for i in storages:
 				tmp.remove_node(i)
 	else:
+		if town["point_idx"]==Map.lines[Map.lines_connected_to_points[town["point_idx"]][0]][0]:
+			second_point=Map.lines[Map.lines_connected_to_points[town["point_idx"]][0]][1]
+			if (town["point_idx"], second_point) in tmp.edges():
+				tmp.remove_edge(town["point_idx"], second_point)
+		else:
+			second_point=Map.lines[Map.lines_connected_to_points[town["point_idx"]][0]][0]
+			if (second_point, town["point_idx"]) in tmp.edges():
+				tmp.remove_edge(second_point, town["point_idx"])
+		
 		target=town["point_idx"]
 	if target==-1:
 		return 0

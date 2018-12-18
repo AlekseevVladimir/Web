@@ -12,6 +12,7 @@ class Action(Enum):
 	UPGRADE = 4
 	TURN = 5
 	PLAYER = 6
+	GAME = 7
 	MAP = 10
 
 
@@ -61,8 +62,8 @@ class Socket():
 	def action(self, tmp, string):
 		TIMEOUT = 4
 		DATAPACK = 4
-		bytes = tmp.to_bytes(DATAPACK, byteorder='little') + len(string).to_bytes(DATAPACK,
-																				  byteorder='little') + string.encode()
+		bytes = (tmp.to_bytes(DATAPACK, byteorder='little') 
+				+ len(string).to_bytes(DATAPACK, byteorder='little') + string.encode())
 		self.sock.send(bytes)
 		response = self.sock.recv(DATAPACK)
 		if response:
@@ -93,10 +94,27 @@ class Socket():
 			return response, data
 		return response
 
-	def login(self, name):
+	def login(self, name, password, game_name, num_players, num_turns):
+		tmp=dict()
 		string = json.dumps({"name": name})
+		if name:
+			tmp["name"]=name
+		if password:
+			tmp["password"]=password
+		if game_name:
+			tmp["game"]=game_name
+		if num_players:
+			tmp["num_players"]=int(num_players)
+		if num_turns:
+			tmp["num_turns"]=int(num_turns)
+		print(tmp)
+		string=json.dumps(tmp)
+		print(string)
 		return self.action(Action.LOGIN.value, string)
-
+	
+	def game(self):
+		return self.action(Action.GAME.value, '')
+	
 	def player(self):
 		return self.action(Action.PLAYER.value, '')
 
@@ -126,6 +144,7 @@ class Socket():
 		else:
 			trains = trains
 		string = json.dumps({"posts": posts, "trains": trains})
+		print(string)
 		return self.action(Action.UPGRADE.value, string)
 
 	def errorReport(self, code):
